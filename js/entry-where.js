@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   const placeNameInput = document.getElementById('place-name');
+  const placeNameSuggestions = document.getElementById('place-name-suggestions');
   const useGeoBtn = document.getElementById('use-geo-btn');
   const geoStatus = document.getElementById('geo-status');
   const addAddressLink = document.getElementById('add-address-link');
@@ -226,6 +227,30 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     return id;
   }
+
+  function populatePlaceSuggestions() {
+    const counts = {};
+    const lastSeen = {};
+    BiteBookStorage.listEntries().forEach((e) => {
+      if (!e.placeName) return;
+      counts[e.placeName] = (counts[e.placeName] || 0) + 1;
+      if (!lastSeen[e.placeName] || e.updatedAt > lastSeen[e.placeName]) {
+        lastSeen[e.placeName] = e.updatedAt;
+      }
+    });
+    const names = Object.keys(counts)
+      .sort((a, b) => (counts[b] - counts[a]) || (lastSeen[b] || '').localeCompare(lastSeen[a] || ''))
+      .slice(0, 30);
+
+    placeNameSuggestions.innerHTML = '';
+    names.forEach((name) => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      placeNameSuggestions.appendChild(opt);
+    });
+  }
+
+  populatePlaceSuggestions();
 
   entryId = resolveEntryId();
   if (entryId) {
