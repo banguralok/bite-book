@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const occasionSection = document.getElementById('section-occasion-date');
   const occasionDateInput = document.getElementById('occasion-date');
   const occasionDateHint = document.getElementById('occasion-date-hint');
+  const reasonHint = document.getElementById('reason-hint');
   const backBtn = document.getElementById('back-btn');
   const continueBtn = document.getElementById('continue-btn');
   const savedToast = document.getElementById('saved-toast');
@@ -66,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
     occasionDateInput.value = '';
   }
 
-  function selectReasonChip(value) {
+  function selectReasonChip(value, autoHintText) {
     selectedReason = value;
     reasonChips.forEach((c) => setChipSelected(c, c.dataset.value === value));
     if (value === 'other') {
@@ -75,6 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
       reasonOtherWrap.style.display = 'none';
       reasonOtherInput.value = '';
     }
+    reasonHint.textContent = autoHintText || '';
     if (DATE_RELEVANT.includes(value)) {
       showOccasionSection();
     } else {
@@ -115,6 +117,11 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         selectReasonChip('other');
         reasonOtherInput.value = existing.reason;
+      }
+    } else if (mealDate) {
+      const match = findMatchingOccasion(mealDate);
+      if (match) {
+        selectReasonChip(match.reason, `Looks like it's ${match.label} — tap another if that's not it.`);
       }
     }
 

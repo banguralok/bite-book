@@ -2,6 +2,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const companionChips = document.querySelectorAll('#companion-chips .chip');
   const companionOtherWrap = document.getElementById('companion-other-wrap');
   const companionOtherInput = document.getElementById('companion-other');
+  const familyPickerSection = document.getElementById('section-family-picker');
+  const familyPickerChipsEl = document.getElementById('family-picker-chips');
   const namesSection = document.getElementById('section-names');
   const addNamesLink = document.getElementById('add-names-link');
   const namesWrap = document.getElementById('names-wrap');
@@ -15,6 +17,10 @@ document.addEventListener('DOMContentLoaded', () => {
   let createdAt = null;
   let hasInteracted = false;
   const selectedTypes = new Set();
+  const selectedFamilyIds = new Set();
+
+  const profile = BiteBookProfile.get();
+  const familyMembers = (profile && profile.familyMembers) || [];
 
   function debounce(fn, delay) {
     let timer;
@@ -31,6 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ...existing,
       id: entryId,
       companionTypes: Array.from(selectedTypes),
+      companionFamilyIds: Array.from(selectedFamilyIds),
       companionDetail: companionOtherInput.value.trim() || null,
       companionNames: companionNamesInput.value.trim() || null,
       createdAt: createdAt || existing.createdAt || now,
@@ -52,12 +59,44 @@ document.addEventListener('DOMContentLoaded', () => {
     return selectedTypes.has('solo') && selectedTypes.size === 1;
   }
 
+  function renderFamilyPickerChips() {
+    familyPickerChipsEl.innerHTML = '';
+    familyMembers.forEach((member) => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'chip';
+      chip.setAttribute('aria-pressed', 'false');
+      chip.dataset.id = member.id;
+      const relLabel = familyRelationshipLabel(member.relationship);
+      const icon = relLabel ? relLabel.split(' ')[0] : '👤';
+      chip.textContent = `${icon} ${familyMemberDisplayName(member)}`;
+      chip.addEventListener('click', () => {
+        hasInteracted = true;
+        if (selectedFamilyIds.has(member.id)) {
+          selectedFamilyIds.delete(member.id);
+        } else {
+          selectedFamilyIds.add(member.id);
+        }
+        setChipSelected(chip, selectedFamilyIds.has(member.id));
+        scheduleSave();
+      });
+      familyPickerChipsEl.appendChild(chip);
+    });
+  }
+
+  function updateFamilyPickerVisibility() {
+    const shouldShow = familyMembers.length > 0 && selectedTypes.has('family');
+    familyPickerSection.classList.toggle('visible', shouldShow);
+  }
+
   function refreshUI() {
     companionChips.forEach((c) => setChipSelected(c, selectedTypes.has(c.dataset.value)));
 
     const wantsDetail = selectedTypes.has('other') || selectedTypes.has('big-group');
     companionOtherWrap.style.display = wantsDetail ? 'block' : 'none';
     if (!wantsDetail) companionOtherInput.value = '';
+
+    updateFamilyPickerVisibility();
 
     if (isSoloOnly()) {
       namesSection.classList.remove('visible');
@@ -123,6 +162,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const types = existing.companionTypes || (existing.companionType ? [existing.companionType] : []);
     types.forEach((t) => selectedTypes.add(t));
+
+    (existing.companionFamilyIds || []).forEach((id) => selectedFamilyIds.add(id));
+    familyPickerChipsEl.querySelectorAll('.chip').forEach((chip) => {
+      setChipSelected(chip, selectedFamilyIds.has(chip.dataset.id));
+    });
+
     refreshUI();
 
     if (existing.companionDetail) companionOtherInput.value = existing.companionDetail;
@@ -141,6 +186,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     return id;
   }
+
+  renderFamilyPickerChips();
 
   entryId = resolveEntryId();
   if (entryId) {

@@ -3,6 +3,66 @@ function setChipSelected(chip, isSelected) {
   chip.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
 }
 
+const FAMILY_RELATIONSHIP_LABELS = {
+  mom: '👩 Mom',
+  dad: '👨 Dad',
+  spouse: '💑 Spouse / Partner',
+  brother: '👦 Brother',
+  sister: '👧 Sister',
+  son: '👶 Son',
+  daughter: '👶 Daughter',
+  grandparent: '👴 Grandparent',
+};
+
+function familyRelationshipLabel(value) {
+  if (!value) return '';
+  return FAMILY_RELATIONSHIP_LABELS[value] || `✏️ ${value}`;
+}
+
+function familyMemberDisplayName(member) {
+  if (!member) return '';
+  if (member.name) return member.name;
+  return familyRelationshipLabel(member.relationship).replace(/^[^ ]+ /, '');
+}
+
+function monthDayOf(dateStr) {
+  return dateStr && dateStr.length >= 10 ? dateStr.slice(5, 10) : null;
+}
+
+// Checks whether a given YYYY-MM-DD date matches a saved birthday/anniversary
+// (own or a family member's), ignoring year. Returns null if nothing matches.
+function monthDayLabel(dateStr) {
+  if (!dateStr) return '';
+  const date = parseDateInputValue(dateStr);
+  return date.toLocaleDateString(undefined, { month: 'long', day: 'numeric' });
+}
+
+function findMatchingOccasion(dateStr) {
+  const profile = (typeof BiteBookProfile !== 'undefined') ? BiteBookProfile.get() : null;
+  const target = monthDayOf(dateStr);
+  if (!profile || !target) return null;
+
+  if (monthDayOf(profile.birthday) === target) {
+    return { reason: 'birthday', label: 'your birthday' };
+  }
+  if (monthDayOf(profile.anniversary) === target) {
+    return { reason: 'anniversary', label: 'your anniversary' };
+  }
+
+  const members = profile.familyMembers || [];
+  for (const m of members) {
+    if (monthDayOf(m.birthday) === target) {
+      return { reason: 'birthday', label: `${familyMemberDisplayName(m)}'s birthday` };
+    }
+  }
+  for (const m of members) {
+    if (monthDayOf(m.anniversary) === target) {
+      return { reason: 'anniversary', label: `${familyMemberDisplayName(m)}'s anniversary` };
+    }
+  }
+  return null;
+}
+
 function guessMealTypeFromTime() {
   const hour = new Date().getHours();
   if (hour >= 4 && hour < 11) return 'breakfast';
@@ -110,11 +170,24 @@ function companionTypeLabel(value) {
   return COMPANION_TYPE_LABELS[value] || `✏️ ${value}`;
 }
 
+function resolveFamilyMemberNames(familyIds) {
+  if (!familyIds || familyIds.length === 0) return [];
+  const profile = (typeof BiteBookProfile !== 'undefined') ? BiteBookProfile.get() : null;
+  const members = (profile && profile.familyMembers) || [];
+  return familyIds
+    .map((id) => members.find((m) => m.id === id))
+    .filter(Boolean)
+    .map((m) => familyMemberDisplayName(m));
+}
+
 function companionSummaryLabel(entry) {
   const types = entry.companionTypes || (entry.companionType ? [entry.companionType] : []);
   if (types.length === 0) return '';
   const base = types.map((t) => companionTypeLabel(t)).join(' + ');
-  const extras = [entry.companionDetail, entry.companionNames].filter(Boolean).join(', ');
+  const familyNames = resolveFamilyMemberNames(entry.companionFamilyIds);
+  const extras = [...familyNames, entry.companionDetail, entry.companionNames]
+    .filter(Boolean)
+    .join(', ');
   return extras ? `${base} (${extras})` : base;
 }
 

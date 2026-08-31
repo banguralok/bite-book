@@ -51,6 +51,68 @@
     </div>
 
     <div class="field-group">
+      <label class="field-label">Special dates</label>
+      <span class="field-sublabel">Optional — we'll quietly notice when a meal falls on one of these.</span>
+      <div class="date-pair-row">
+        <div>
+          <span class="field-sublabel" style="margin-top:0;">🎂 Your birthday</span>
+          <input type="date" id="profile-birthday" class="text-input">
+        </div>
+        <div>
+          <span class="field-sublabel" style="margin-top:0;">💍 Your anniversary</span>
+          <input type="date" id="profile-anniversary" class="text-input">
+        </div>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Family</label>
+      <span class="field-sublabel">
+        Add family members so "Who You Ate With" can offer them as quick taps instead of typing names every time.
+      </span>
+
+      <div id="family-list" class="family-list"></div>
+
+      <button type="button" class="file-upload-btn" id="add-family-btn" style="margin-top: 10px;">➕ Add a Family Member</button>
+
+      <div id="family-form" class="family-form" style="display: none;">
+        <label class="field-label" style="font-size: 0.95rem;">Relationship</label>
+        <div class="chip-grid" id="relationship-chips">
+          <button type="button" class="chip" aria-pressed="false" data-value="mom">👩 Mom</button>
+          <button type="button" class="chip" aria-pressed="false" data-value="dad">👨 Dad</button>
+          <button type="button" class="chip" aria-pressed="false" data-value="spouse">💑 Spouse / Partner</button>
+          <button type="button" class="chip" aria-pressed="false" data-value="brother">👦 Brother</button>
+          <button type="button" class="chip" aria-pressed="false" data-value="sister">👧 Sister</button>
+          <button type="button" class="chip" aria-pressed="false" data-value="son">👶 Son</button>
+          <button type="button" class="chip" aria-pressed="false" data-value="daughter">👶 Daughter</button>
+          <button type="button" class="chip" aria-pressed="false" data-value="grandparent">👴 Grandparent</button>
+          <button type="button" class="chip" aria-pressed="false" data-value="other">✏️ Other</button>
+        </div>
+        <div class="field-group" id="relationship-other-wrap" style="margin-top: 12px; display: none;">
+          <input type="text" id="relationship-other" class="text-input" placeholder="e.g. Uncle, Cousin..." autocomplete="off">
+        </div>
+        <div class="field-group" style="margin-top: 14px;">
+          <span class="field-sublabel" style="margin-top:0;">Name (optional)</span>
+          <input type="text" id="family-name" class="text-input" placeholder="e.g. Priya" autocomplete="off">
+        </div>
+        <div class="date-pair-row">
+          <div>
+            <span class="field-sublabel" style="margin-top:0;">🎂 Birthday</span>
+            <input type="date" id="family-birthday" class="text-input">
+          </div>
+          <div>
+            <span class="field-sublabel" style="margin-top:0;">💍 Anniversary</span>
+            <input type="date" id="family-anniversary" class="text-input">
+          </div>
+        </div>
+        <div class="wizard-actions-right" style="margin-top: 14px; justify-content: flex-end; display: flex;">
+          <button type="button" class="btn btn-back" id="cancel-family-btn">Cancel</button>
+          <button type="button" class="btn btn-primary" id="save-family-btn">Add</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="field-group">
       <label class="field-label">Where's home?</label>
       <span class="field-sublabel">
         This helps Bite Book quietly tell "eating at home" apart from "eating out" — used only for Quick Log's smart guesses.
