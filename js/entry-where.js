@@ -180,6 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateContinueState();
         scheduleSave();
         resetGeoButton();
+        populatePlaceSuggestions();
       },
       (err) => {
         geoStatus.textContent = geoErrorMessage(err);
@@ -228,6 +229,26 @@ document.addEventListener('DOMContentLoaded', () => {
     return id;
   }
 
+  const NEARBY_RADIUS_METERS = 250 * 1000; // ~250km — roughly "this state and its neighbors"
+
+  function suggestionReferencePoint() {
+    if (coords) return coords; // freshest signal: geolocation fetched earlier this visit
+    const profile = (typeof BiteBookProfile !== 'undefined') ? BiteBookProfile.get() : null;
+    return (profile && profile.homeCoords) || null;
+  }
+
+  // Only entries saved via "Use My Current Location" carry coords, so this
+  // is necessarily partial — placeNames typed by hand have no known location.
+  function mostRecentCoordsByPlace() {
+    const map = {};
+    BiteBookStorage.listEntries().forEach((e) => {
+      if (e.placeName && e.coords && (!map[e.placeName] || e.updatedAt > map[e.placeName].updatedAt)) {
+        map[e.placeName] = { lat: e.coords.lat, lon: e.coords.lon, updatedAt: e.updatedAt };
+      }
+    });
+    return map;
+  }
+
   function populatePlaceSuggestions() {
     const counts = {};
     const lastSeen = {};
@@ -238,9 +259,35 @@ document.addEventListener('DOMContentLoaded', () => {
         lastSeen[e.placeName] = e.updatedAt;
       }
     });
-    const names = Object.keys(counts)
-      .sort((a, b) => (counts[b] - counts[a]) || (lastSeen[b] || '').localeCompare(lastSeen[a] || ''))
-      .slice(0, 30);
+
+    const byFrequency = (a, b) => (counts[b] - counts[a]) || (lastSeen[b] || '').localeCompare(lastSeen[a] || '');
+    const ref = suggestionReferencePoint();
+    let names;
+
+    if (ref) {
+      const coordsByPlace = mostRecentCoordsByPlace();
+      const nearby = [];
+      const unknownDistance = [];
+      Object.keys(counts).forEach((name) => {
+        const placeCoords = coordsByPlace[name];
+        if (placeCoords) {
+          const dist = distanceMeters(ref.lat, ref.lon, placeCoords.lat, placeCoords.lon);
+          if (dist <= NEARBY_RADIUS_METERS) nearby.push({ name, dist });
+          // farther than that isn't useful for quick typing here, so it's left out
+        } else {
+          unknownDistance.push(name);
+        }
+      });
+      nearby.sort((a, b) => a.dist - b.dist);
+      unknownDistance.sort(byFrequency);
+      names = [...nearby.map((n) => n.name), ...unknownDistance];
+    } else {
+      // No home address saved and no location fetched yet this visit — can't
+      // judge geography, so fall back to plain frequency/recency.
+      names = Object.keys(counts).sort(byFrequency);
+    }
+
+    names = names.slice(0, 30);
 
     placeNameSuggestions.innerHTML = '';
     names.forEach((name) => {
