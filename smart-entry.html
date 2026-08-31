@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Entry — Bite Book</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍜</text></svg>">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff8a4c">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=2">
+</head>
+<body>
+
+<header class="nav" id="site-header"></header>
+
+<main class="wizard">
+  <div class="wizard-card" style="margin-top: 40px;">
+    <p class="wizard-kicker">just tell us about it</p>
+    <h1>✨ Smart Entry</h1>
+    <p class="wizard-help">
+      Describe your meal in a sentence or two — food, who was there, why, how it was — and we'll fill in as much of the form as we can. You'll still review and can fix anything before it's saved.
+    </p>
+
+    <div class="field-group">
+      <textarea
+        id="smart-entry-text"
+        class="text-area"
+        rows="4"
+        style="font-size: 1.05rem; min-height: 120px;"
+        placeholder="e.g. Had chicken biryani at the Dhaba with mom and grandma for grandma's birthday — loved it, would give it 5 stars"
+      ></textarea>
+      <span class="field-sublabel">The more you mention, the more we can fill in — but a short sentence works fine too.</span>
+    </div>
+
+    <p class="upload-status" id="smart-entry-status"></p>
+
+    <div class="wizard-actions" style="border-top: none; padding-top: 8px;">
+      <a href="entry.html" class="wizard-link-start">📝 Use the Full Form Instead</a>
+      <div class="wizard-actions-right">
+        <button type="button" class="btn btn-primary btn-large" id="smart-entry-btn" disabled>✨ Fill It In For Me</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="footer" id="site-footer"></footer>
+
+<script src="js/partials.js?v=2"></script>
+<script src="js/storage.js?v=2"></script>
+<script src="js/labels.js?v=2"></script>
+<script src="js/profile.js?v=2"></script>
+<script src="js/settings.js?v=2"></script>
+<script src="js/ai.js?v=2"></script>
+<script src="js/smart-entry.js"></script>
+</body>
+</html>

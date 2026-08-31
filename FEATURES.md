@@ -13,6 +13,7 @@ This document has two parts: a **Feature List** (what the app can do, at a glanc
 - Autosave on every field, with resumable drafts (leave anytime, pick back up exactly where you left off)
 - "Finish Later" exit available on every step
 - Quick Log: a one-field fast-capture path for when you just want to log the food name and fill in the rest later
+- **Smart Entry**: describe a meal in a sentence ("Had biryani at the Dhaba with mom for her birthday, loved it") and AI (Google Gemini, free tier) fills in as much of the 9-step form as it can — food, meal type, cuisine, date, place, who was there (including matching your saved family members), who made it, why, rating, and more — all pre-filled and ready to review/edit through the normal wizard
 - Smart auto-detection throughout — meal type and time-of-day guessed from the clock, place type and cuisine guessed from GPS + OpenStreetMap, "made by" guessed from restaurant detection, and birthday/anniversary occasions guessed from your saved dates — always shown as an overridable suggestion, never locked in
 
 **Browsing & managing entries**
@@ -73,6 +74,9 @@ Read-only narrative page for a finished entry: hero photo, title, and conditiona
 ### Quick Log — [quick-log.html](quick-log.html)
 A single food-name field for fast capture. Submitting saves a draft immediately and auto-fills, in the background: today's date, meal type and time-of-day (guessed from the clock), and place/maker/cuisine (guessed from geolocation the same way the Where step does — home-proximity first, restaurant detection second). A live preview shows what was auto-captured before you submit, and a link escapes to the full wizard if you'd rather fill it in by hand.
 
+### Smart Entry — [smart-entry.html](smart-entry.html)
+A free-text box: describe a meal in a sentence or two and an AI model (Google Gemini, called directly from the browser with your own free API key) parses it into a structured draft entry — food, meal type, cuisine, date (relative dates like "yesterday" resolved automatically), place, who was there (matched against your saved family members by name/relationship), who made it, why, liked qualities, and rating, wherever the description clearly supports it. Anything the AI can't confidently infer falls back to the same clock-based smart guesses used elsewhere (meal type/time-of-day), or is left blank for you to fill in. The result is saved as a normal draft and you're taken straight into Step 1 of the regular wizard to review and correct anything before continuing — nothing is ever silently accepted. Requires a free Gemini API key, entered once on the Profile page (see below); without one, the page explains how to get one instead of failing silently.
+
 ### Stats — [stats.html](stats.html)
 Computed live from your entries: total/complete counts, average rating, entries logged this month, your top-rated dish, and four ranked breakdowns (top cuisines, most common meal times, most common company, most common cooks), each shown as a bar chart of your top 5.
 
@@ -80,7 +84,7 @@ Computed live from your entries: total/complete counts, average rating, entries 
 Every complete entry, defaulted to rating order, with your own manual reordering (via Up/Down arrows) remembered separately and taking precedence. Each row shows a thumbnail, title (linking to the story view), and star rating.
 
 ### Profile — [profile.html](profile.html)
-Name, avatar, home address (with a "use my current location" geolocation button), your birthday and anniversary, and a family roster. Each family member has a relationship, optional name, and optional birthday/anniversary. This data is used only locally — to power the home/restaurant detection in Quick Log and the Where step, the family quick-picker in Who You Ate With, and the birthday/anniversary auto-suggestion in Why It Was Made.
+Name, avatar, home address (with a "use my current location" geolocation button), your birthday and anniversary, and a family roster. Each family member has a relationship, optional name, and optional birthday/anniversary. This data is used only locally — to power the home/restaurant detection in Quick Log and the Where step, the family quick-picker in Who You Ate With, and the birthday/anniversary auto-suggestion in Why It Was Made. Also holds the optional **Gemini API key** that powers Smart Entry — stored separately from the rest of your profile so it's never swept up in the Export/Import backup file.
 
 ### Landing Page — [index.html](index.html)
 Static introduction: hero with a "Start My First Entry" call to action, a 3-step "how it works" explainer, and a preview of everything an entry can capture.
