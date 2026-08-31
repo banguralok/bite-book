@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ask Your Journal — Bite Book</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍜</text></svg>">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff8a4c">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=2">
+</head>
+<body>
+
+<header class="nav" id="site-header"></header>
+
+<main class="wizard">
+  <div class="wizard-card" style="margin-top: 40px;">
+    <p class="wizard-kicker">just ask</p>
+    <h1>🗣️ Ask Your Journal</h1>
+    <p class="wizard-help">Ask anything about what you've logged — favorites, patterns, who cooked what, when.</p>
+
+    <div class="chat-examples" id="chat-examples">
+      <button type="button" class="chat-example-chip" data-q="What's my highest-rated dish?">What's my highest-rated dish?</button>
+      <button type="button" class="chat-example-chip" data-q="How often does mom cook for me?">How often does mom cook for me?</button>
+      <button type="button" class="chat-example-chip" data-q="What have I eaten this month?">What have I eaten this month?</button>
+      <button type="button" class="chat-example-chip" data-q="What's my most common cuisine?">What's my most common cuisine?</button>
+    </div>
+
+    <div class="chat-log" id="chat-log"></div>
+
+    <div class="chat-input-row">
+      <input type="text" id="chat-input" class="text-input" placeholder="Ask something about your food journal..." autocomplete="off">
+      <button type="button" class="btn btn-primary" id="chat-send-btn" disabled>Ask</button>
+    </div>
+  </div>
+</main>
+
+<footer class="footer" id="site-footer"></footer>
+
+<script src="js/partials.js?v=2"></script>
+<script src="js/storage.js?v=2"></script>
+<script src="js/labels.js?v=2"></script>
+<script src="js/profile.js?v=2"></script>
+<script src="js/settings.js?v=2"></script>
+<script src="js/ai.js?v=2"></script>
+<script src="js/ask.js"></script>
+</body>
+</html>

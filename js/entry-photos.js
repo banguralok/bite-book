@@ -50,47 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
     return div.innerHTML;
   }
 
-  function compressImage(file) {
-    return new Promise((resolve, reject) => {
-      const url = URL.createObjectURL(file);
-      const img = new Image();
-      img.onload = () => {
-        const maxDim = 1024;
-        let { width, height } = img;
-        if (width > maxDim || height > maxDim) {
-          if (width >= height) {
-            height = Math.round(height * (maxDim / width));
-            width = maxDim;
-          } else {
-            width = Math.round(width * (maxDim / height));
-            height = maxDim;
-          }
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        URL.revokeObjectURL(url);
-
-        let quality = 0.72;
-        let dataUrl = canvas.toDataURL('image/jpeg', quality);
-        let estBytes = Math.round(dataUrl.length * 0.75);
-        if (estBytes > MAX_PHOTO_BYTES) {
-          quality = 0.5;
-          dataUrl = canvas.toDataURL('image/jpeg', quality);
-          estBytes = Math.round(dataUrl.length * 0.75);
-        }
-        resolve({ dataUrl, width, height, size: estBytes });
-      };
-      img.onerror = () => {
-        URL.revokeObjectURL(url);
-        reject(new Error('Could not read that image.'));
-      };
-      img.src = url;
-    });
-  }
-
   function renderPhotos() {
     photoGrid.querySelectorAll('.photo-tile').forEach((el) => el.remove());
     photos.forEach((photo, index) => {
@@ -131,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!file.type.startsWith('image/')) continue;
 
       try {
-        const compressed = await compressImage(file);
+        const compressed = await compressImageFile(file, { maxBytes: MAX_PHOTO_BYTES });
         const previous = photos.slice();
         photos.push(compressed);
         const ok = saveNow();

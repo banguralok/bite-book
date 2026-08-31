@@ -86,5 +86,63 @@ document.addEventListener('DOMContentLoaded', () => {
   );
   const makerBars = barBlock('👩‍🍳 Who Makes Your Food', tallyBy(entries, (e) => e.madeBy), (v) => makerTypeLabel(v));
 
-  container.innerHTML = tiles + topRatedBlock + cuisineBars + mealBars + companionBars + makerBars;
+  const insightsBlock = `
+    <div class="stat-block">
+      <h3>✨ AI Insights</h3>
+      <p class="stat-empty-note" id="ai-insights-hint">Spot a few patterns in your data — powered by AI.</p>
+      <button type="button" class="btn btn-back" id="ai-insights-btn">✨ Generate Insights</button>
+      <ul class="insights-list" id="insights-list" style="display: none;"></ul>
+      <p class="upload-status" id="ai-insights-status"></p>
+    </div>
+  `;
+
+  container.innerHTML = tiles + topRatedBlock + cuisineBars + mealBars + companionBars + makerBars + insightsBlock;
+
+  const insightsBtn = document.getElementById('ai-insights-btn');
+  const insightsHint = document.getElementById('ai-insights-hint');
+  const insightsList = document.getElementById('insights-list');
+  const insightsStatus = document.getElementById('ai-insights-status');
+
+  insightsBtn.addEventListener('click', async () => {
+    insightsBtn.disabled = true;
+    insightsBtn.textContent = '✨ Thinking...';
+    insightsStatus.textContent = '';
+    insightsStatus.classList.remove('error');
+
+    try {
+      const context = {
+        today: toDateInputValue(new Date()),
+        entries: entries.map((e) => ({
+          food: e.food,
+          status: e.status,
+          mealType: e.mealType,
+          cuisine: e.cuisine,
+          ateOn: e.ateOn,
+          placeType: e.placeType,
+          companions: companionSummaryLabel(e) || null,
+          madeBy: e.madeBy,
+          reason: e.reason,
+          likedQualities: e.likedQualities,
+          rating: e.rating,
+          wouldEatAgain: e.wouldEatAgain,
+          personalRank: e.personalRank,
+          createdAt: e.createdAt,
+        })),
+      };
+      const insights = await BiteBookAI.generateInsights(context);
+      if (insights.length === 0) {
+        insightsStatus.textContent = 'Not enough data yet for a pattern — log a few more meals and try again.';
+      } else {
+        insightsHint.style.display = 'none';
+        insightsList.innerHTML = insights.map((i) => `<li>${escapeHtmlStats(i)}</li>`).join('');
+        insightsList.style.display = 'flex';
+      }
+    } catch (err) {
+      insightsStatus.textContent = BiteBookAI.friendlyErrorMessage(err);
+      insightsStatus.classList.add('error');
+    } finally {
+      insightsBtn.disabled = false;
+      insightsBtn.textContent = '✨ Generate Insights';
+    }
+  });
 });

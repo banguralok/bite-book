@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Your Stats — Bite Book</title>
+<title>Clean Up Places — Bite Book</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍜</text></svg>">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#ff8a4c">
@@ -17,27 +17,29 @@
 
 <header class="nav" id="site-header"></header>
 
-<main class="entries-page">
-  <a href="entries.html" class="wizard-link-start" style="margin-bottom: 20px; display: inline-flex;">‹ Back to My Entries</a>
+<main class="wizard">
+  <div class="wizard-card" style="margin-top: 40px;">
+    <p class="wizard-kicker">tidy up</p>
+    <h1>🧹 Clean Up Places</h1>
+    <p class="wizard-help">
+      Typed the same place differently over time? AI can spot likely duplicates in your place names so your stats stay accurate. Nothing changes until you approve each merge.
+    </p>
 
-  <div class="entries-header">
-    <p class="eyebrow">the numbers</p>
-    <h1>Your Stats</h1>
-    <p class="section-sub" style="margin: 12px 0 0;">A little snapshot of your food story so far.</p>
+    <button type="button" class="btn btn-primary" id="find-duplicates-btn">✨ Find Possible Duplicates</button>
+    <p class="upload-status" id="dedupe-status"></p>
+
+    <div id="dedupe-groups"></div>
   </div>
-
-  <div id="stats-content"></div>
 </main>
 
 <footer class="footer" id="site-footer"></footer>
 
 <script src="js/partials.js?v=2"></script>
-<script src="js/profile.js?v=2"></script>
-<script src="js/geo.js?v=2"></script>
 <script src="js/storage.js?v=2"></script>
 <script src="js/labels.js?v=2"></script>
+<script src="js/profile.js?v=2"></script>
 <script src="js/settings.js?v=2"></script>
 <script src="js/ai.js?v=2"></script>
-<script src="js/stats.js"></script>
+<script src="js/dedupe.js"></script>
 </body>
 </html>

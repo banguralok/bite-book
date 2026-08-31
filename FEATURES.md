@@ -13,11 +13,13 @@ This document has two parts: a **Feature List** (what the app can do, at a glanc
 - Autosave on every field, with resumable drafts (leave anytime, pick back up exactly where you left off)
 - "Finish Later" exit available on every step
 - Quick Log: a one-field fast-capture path for when you just want to log the food name and fill in the rest later
-- **Smart Entry**: describe a meal in a sentence ("Had biryani at the Dhaba with mom for her birthday, loved it") and AI (Google Gemini, free tier) fills in as much of the 9-step form as it can — food, meal type, cuisine, date, place, who was there (including matching your saved family members), who made it, why, rating, and more — all pre-filled and ready to review/edit through the normal wizard
+- **Smart Entry**: describe a meal in a sentence ("Had biryani at the Dhaba with mom for her birthday, loved it") and/or attach a photo, and AI (Google Gemini, free tier) fills in as much of the 9-step form as it can — food, meal type, cuisine, date, place, who was there (including matching your saved family members), who made it, why, rating, and more — all pre-filled and ready to review/edit through the normal wizard. A photo alone is enough — AI identifies the dish, and the photo carries forward into Step 9 automatically
 - Smart auto-detection throughout — meal type and time-of-day guessed from the clock, place type and cuisine guessed from GPS + OpenStreetMap, "made by" guessed from restaurant detection, and birthday/anniversary occasions guessed from your saved dates — always shown as an overridable suggestion, never locked in
 
 **Browsing & managing entries**
 - Searchable, filterable "My Entries" list (search by food/place/ingredients/reflection/people; filter by complete/draft)
+- **Smart Search**: when a plain search comes up empty, AI can search by meaning instead — "something spicy" finds dishes tagged with a spicy quality even if the word "spicy" never appears
+- **Clean Up Places**: AI scans your place names for likely duplicates from inconsistent typing ("Spice Villa" vs "Spice Villa Restaurant") and lets you review and merge each group — nothing changes without your approval
 - Draft entries resume at the correct wizard step automatically
 - Delete with a 6-second undo window
 - "Log This Again" — duplicate a past entry's core details into a fresh draft
@@ -25,8 +27,9 @@ This document has two parts: a **Feature List** (what the app can do, at a glanc
 - Share any entry as a downloadable image (auto-generated PNG card)
 
 **Insights**
-- Stats page: totals, average rating, entries this month, top-rated dish, and breakdowns of your most common cuisines, meal times, dining companions, and cooks
+- Stats page: totals, average rating, entries this month, top-rated dish, and breakdowns of your most common cuisines, meal times, dining companions, and cooks — plus on-demand **AI Insights**, a few specific, data-grounded observations about your eating patterns
 - Rankings page: manually reorder your complete entries (drag-free, up/down arrows), defaulting to rating order
+- **Ask Your Journal**: a chat interface (AI, Google Gemini free tier) that answers natural-language questions about everything you've logged — "What's my highest-rated dish?", "How often does mom cook for me?" — with follow-up questions understood in context
 
 **Personalization**
 - Profile page: name, avatar, home address (for home-vs-restaurant detection), your birthday and anniversary
@@ -70,21 +73,28 @@ Read-only narrative page for a finished entry: hero photo, title, and conditiona
 - **Import**: restores/merges entries from a JSON backup file (with confirmation), sanitizing any unsafe links before merging.
 - **Delete**: confirms, then hides the entry immediately with a 6-second "Undo" toast before the deletion is finalized.
 - **Log This Again** available directly from the list.
+- **Smart Search**: if the live substring search returns nothing for the current query, a "✨ Try Smart Search" button appears. It sends the query plus a compact snapshot of your entries (cuisine, ingredients, liked qualities, reflection, etc.) to Gemini and asks which ones plausibly match in meaning, not just literal words — results are labeled so it's clear they came from AI reasoning rather than an exact match.
 
 ### Quick Log — [quick-log.html](quick-log.html)
 A single food-name field for fast capture. Submitting saves a draft immediately and auto-fills, in the background: today's date, meal type and time-of-day (guessed from the clock), and place/maker/cuisine (guessed from geolocation the same way the Where step does — home-proximity first, restaurant detection second). A live preview shows what was auto-captured before you submit, and a link escapes to the full wizard if you'd rather fill it in by hand.
 
 ### Smart Entry — [smart-entry.html](smart-entry.html)
-A free-text box: describe a meal in a sentence or two and an AI model (Google Gemini, called directly from the browser with your own free API key) parses it into a structured draft entry — food, meal type, cuisine, date (relative dates like "yesterday" resolved automatically), place, who was there (matched against your saved family members by name/relationship), who made it, why, liked qualities, and rating, wherever the description clearly supports it. Anything the AI can't confidently infer falls back to the same clock-based smart guesses used elsewhere (meal type/time-of-day), or is left blank for you to fill in. The result is saved as a normal draft and you're taken straight into Step 1 of the regular wizard to review and correct anything before continuing — nothing is ever silently accepted. Requires a free Gemini API key, entered once on the Profile page (see below); without one, the page explains how to get one instead of failing silently.
+A free-text box and/or a photo upload: describe a meal in a sentence or two, attach a photo, or both, and an AI model (Google Gemini, called directly from the browser with your own free API key) parses it into a structured draft entry — food, meal type, cuisine, date (relative dates like "yesterday" resolved automatically), place, who was there (matched against your saved family members by name/relationship), who made it, why, liked qualities, and rating, wherever the input clearly supports it. A photo alone is enough to identify the dish (and is carried straight into Step 9's photo grid, already attached). Anything the AI can't confidently infer falls back to the same clock-based smart guesses used elsewhere (meal type/time-of-day), or is left blank for you to fill in. The result is saved as a normal draft and you're taken straight into Step 1 of the regular wizard to review and correct anything before continuing — nothing is ever silently accepted. Requires a free Gemini API key, entered once on the Profile page (see below); without one, the page explains how to get one instead of failing silently.
 
 ### Stats — [stats.html](stats.html)
-Computed live from your entries: total/complete counts, average rating, entries logged this month, your top-rated dish, and four ranked breakdowns (top cuisines, most common meal times, most common company, most common cooks), each shown as a bar chart of your top 5.
+Computed live from your entries: total/complete counts, average rating, entries logged this month, your top-rated dish, and four ranked breakdowns (top cuisines, most common meal times, most common company, most common cooks), each shown as a bar chart of your top 5. An **AI Insights** section generates 3-5 specific, data-grounded observations on demand (e.g. "Social dining brings out your highest ratings — every meal shared with family or friends scored 4+ stars") — nothing runs automatically, only when you click Generate.
 
 ### Rankings — [ranking.html](ranking.html)
 Every complete entry, defaulted to rating order, with your own manual reordering (via Up/Down arrows) remembered separately and taking precedence. Each row shows a thumbnail, title (linking to the story view), and star rating.
 
+### Ask Your Journal — [ask.html](ask.html)
+A chat page (linked from My Entries, next to Stats and Rankings). Every question is sent to Gemini along with a snapshot of your journal (food, dates, ratings, companions, reasons, reflections — everything except photos/videos, which stay out of the payload) as system context, so it can answer specifically — citing dish names, dates, and people rather than generic advice. Conversation history is kept for the session so follow-up questions ("Would I eat that again?") are understood in context without repeating yourself. If the data can't answer a question, it says so rather than guessing. Uses the same Gemini API key as Smart Entry.
+
+### Clean Up Places — [dedupe.html](dedupe.html)
+A utility page (linked from My Entries) for catching place names that drifted apart from inconsistent typing over time. "✨ Find Possible Duplicates" sends your distinct place names to Gemini, which groups ones it's fairly confident refer to the same real place (conservatively — it's told to leave anything uncertain separate) and suggests a canonical name for each group. Each group is a card with an editable name field and its own Merge/Skip buttons — nothing is changed until you click Merge on that specific group, which rewrites `placeName` across every affected entry.
+
 ### Profile — [profile.html](profile.html)
-Name, avatar, home address (with a "use my current location" geolocation button), your birthday and anniversary, and a family roster. Each family member has a relationship, optional name, and optional birthday/anniversary. This data is used only locally — to power the home/restaurant detection in Quick Log and the Where step, the family quick-picker in Who You Ate With, and the birthday/anniversary auto-suggestion in Why It Was Made. Also holds the optional **Gemini API key** that powers Smart Entry — stored separately from the rest of your profile so it's never swept up in the Export/Import backup file.
+Name, avatar, home address (with a "use my current location" geolocation button), your birthday and anniversary, and a family roster. Each family member has a relationship, optional name, and optional birthday/anniversary. This data is used only locally — to power the home/restaurant detection in Quick Log and the Where step, the family quick-picker in Who You Ate With, and the birthday/anniversary auto-suggestion in Why It Was Made. Also holds the optional **Gemini API key** that powers every AI feature (Smart Entry, Ask Your Journal, Smart Search, AI Insights, Clean Up Places) — stored separately from the rest of your profile so it's never swept up in the Export/Import backup file.
 
 ### Landing Page — [index.html](index.html)
 Static introduction: hero with a "Start My First Entry" call to action, a 3-step "how it works" explainer, and a preview of everything an entry can capture.

@@ -48,10 +48,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const undoToast = document.getElementById('undo-toast');
   const undoToastText = document.getElementById('undo-toast-text');
   const undoToastBtn = document.getElementById('undo-toast-btn');
+  const smartSearchBtn = document.getElementById('smart-search-btn');
+  const smartSearchStatus = document.getElementById('smart-search-status');
+  const smartSearchActiveNote = document.getElementById('smart-search-active-note');
 
   let statusFilter = 'all';
   let hiddenIds = new Set();
   let pendingDelete = null;
+  let smartSearchIds = null;
+  let smartSearchForQuery = null;
 
   function searchableText(entry) {
     return [
@@ -64,7 +69,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (hiddenIds.has(entry.id)) return false;
     if (statusFilter === 'complete' && entry.status !== 'complete') return false;
     if (statusFilter === 'draft' && entry.status === 'complete') return false;
-    if (query && !searchableText(entry).includes(query)) return false;
+    if (query) {
+      const substringMatch = searchableText(entry).includes(query);
+      const smartMatch = !!(smartSearchIds && smartSearchForQuery === query && smartSearchIds.has(entry.id));
+      if (!substringMatch && !smartMatch) return false;
+    }
     return true;
   }
 
@@ -74,6 +83,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const entries = allEntries.filter((e) => matchesFilters(e, query));
 
     listEl.innerHTML = '';
+
+    const smartActive = !!(smartSearchIds && smartSearchForQuery === query && query);
+    smartSearchActiveNote.style.display = smartActive && entries.length > 0 ? 'block' : 'none';
+    if (smartActive && entries.length > 0) {
+      smartSearchActiveNote.textContent = `✨ Showing smart search results for "${searchInput.value.trim()}"`;
+    }
 
     if (allEntries.length === 0) {
       listEl.style.display = 'none';
@@ -200,7 +215,54 @@ document.addEventListener('DOMContentLoaded', () => {
     render();
   });
 
-  searchInput.addEventListener('input', () => render());
+  searchInput.addEventListener('input', () => {
+    smartSearchIds = null;
+    smartSearchForQuery = null;
+    smartSearchStatus.textContent = '';
+    smartSearchStatus.classList.remove('error');
+    render();
+  });
+
+  smartSearchBtn.addEventListener('click', async () => {
+    const query = searchInput.value.trim();
+    if (!query) return;
+
+    smartSearchBtn.disabled = true;
+    smartSearchBtn.textContent = '✨ Thinking...';
+    smartSearchStatus.textContent = '';
+    smartSearchStatus.classList.remove('error');
+
+    try {
+      const compact = BiteBookStorage.listEntries().map((e) => ({
+        id: e.id,
+        food: e.food,
+        cuisine: e.cuisine,
+        mealType: e.mealType,
+        placeName: e.placeName,
+        placeType: e.placeType,
+        madeBy: e.madeBy,
+        reason: e.reason,
+        ingredients: e.ingredientsText,
+        likedQualities: e.likedQualities,
+        reflection: e.reflection,
+        companions: companionSummaryLabel(e) || null,
+      }));
+      const ids = await BiteBookAI.semanticSearchEntries(query, compact);
+      smartSearchIds = new Set(ids);
+      smartSearchForQuery = query.toLowerCase();
+      if (ids.length === 0) {
+        smartSearchStatus.textContent = 'No smart matches either — try rephrasing your search.';
+      } else {
+        render();
+      }
+    } catch (err) {
+      smartSearchStatus.textContent = BiteBookAI.friendlyErrorMessage(err);
+      smartSearchStatus.classList.add('error');
+    } finally {
+      smartSearchBtn.disabled = false;
+      smartSearchBtn.textContent = '✨ Try Smart Search';
+    }
+  });
 
   statusChips.forEach((chip) => {
     chip.addEventListener('click', () => {
