@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your Profile — Bite Book</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍜</text></svg>">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff8a4c">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=2">
+</head>
+<body>
+
+<header class="nav" id="site-header"></header>
+
+<main class="entries-page">
+  <a href="entries.html" class="wizard-link-start" style="margin-bottom: 20px; display: inline-flex;">‹ Back to My Entries</a>
+
+  <div class="entries-header">
+    <p class="eyebrow">just for you</p>
+    <h1>Your Profile</h1>
+    <p class="section-sub" style="margin: 12px 0 0;">
+      This stays right here on your device — never sent anywhere, never shared.
+    </p>
+  </div>
+
+  <div class="wizard-card">
+    <div class="field-group">
+      <label class="field-label">What should we call you?</label>
+      <input type="text" id="profile-name" class="text-input" placeholder="Your name" autocomplete="off">
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Pick an avatar</label>
+      <div class="chip-grid" id="avatar-chips">
+        <button type="button" class="chip avatar-chip" aria-pressed="false" data-value="🧑">🧑</button>
+        <button type="button" class="chip avatar-chip" aria-pressed="false" data-value="🧑‍🍳">🧑‍🍳</button>
+        <button type="button" class="chip avatar-chip" aria-pressed="false" data-value="😋">😋</button>
+        <button type="button" class="chip avatar-chip" aria-pressed="false" data-value="🦖">🦖</button>
+        <button type="button" class="chip avatar-chip" aria-pressed="false" data-value="🐯">🐯</button>
+        <button type="button" class="chip avatar-chip" aria-pressed="false" data-value="🐼">🐼</button>
+        <button type="button" class="chip avatar-chip" aria-pressed="false" data-value="🦊">🦊</button>
+        <button type="button" class="chip avatar-chip" aria-pressed="false" data-value="🐸">🐸</button>
+        <button type="button" class="chip avatar-chip" aria-pressed="false" data-value="🚀">🚀</button>
+        <button type="button" class="chip avatar-chip" aria-pressed="false" data-value="⭐">⭐</button>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Where's home?</label>
+      <span class="field-sublabel">
+        This helps Bite Book quietly tell "eating at home" apart from "eating out" — used only for Quick Log's smart guesses.
+      </span>
+      <input type="text" id="profile-home-address" class="text-input" placeholder="e.g. 12 Maple Street, Edison, NJ" autocomplete="off">
+      <div class="geo-row">
+        <button type="button" class="btn-geo" id="use-home-geo-btn">📍 Set From My Current Location</button>
+        <span class="geo-status" id="home-geo-status"></span>
+      </div>
+    </div>
+
+    <div class="wizard-actions" style="border-top: none; padding-top: 0;">
+      <span></span>
+      <div class="wizard-actions-right">
+        <button type="button" class="btn btn-primary" id="save-profile-btn">💾 Save Profile</button>
+      </div>
+    </div>
+
+    <p class="saved-toast" id="saved-toast">🎉 Profile saved!</p>
+  </div>
+</main>
+
+<footer class="footer" id="site-footer"></footer>
+
+<script src="js/partials.js?v=2"></script>
+<script src="js/storage.js?v=2"></script>
+<script src="js/labels.js?v=2"></script>
+<script src="js/profile.js?v=2"></script>
+<script src="js/geo.js?v=2"></script>
+<script src="js/profile-page.js"></script>
+</body>
+</html>

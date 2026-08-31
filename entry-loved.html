@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Why You Loved It — Bite Book</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍜</text></svg>">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff8a4c">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=2">
+</head>
+<body>
+
+<header class="nav" id="site-header"></header>
+
+<main class="wizard">
+
+  <div class="wizard-progress">
+    <div class="wizard-progress-track">
+      <div class="wizard-progress-fill" style="width: 89%;"></div>
+    </div>
+    <span class="wizard-progress-label">Step 8 of 9</span>
+    <span class="autosave-badge" id="autosave-hint">💾 Saved</span>
+  </div>
+
+  <div class="wizard-card">
+    <p class="wizard-kicker">the good part</p>
+    <h1>What made you love it? 💛</h1>
+    <p class="wizard-help">Pick everything that fits — flavor, feeling, all of it.</p>
+
+    <div class="field-group">
+      <div class="chip-grid" id="liked-chips">
+        <button type="button" class="chip" aria-pressed="false" data-value="delicious">😋 Delicious Taste</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="spice-level">🌶️ Perfect Spice Level</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="healthy">🍃 Felt Healthy</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="indulgent">🧈 Rich &amp; Indulgent</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="comforting">🥵 Warm &amp; Comforting</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="refreshing">🧊 Refreshing</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="texture">💥 Great Texture</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="sweet">🧁 Perfectly Sweet</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="nostalgic">🏡 Tasted Like Home</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="new">🆕 Something New &amp; Different</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="love">👨‍👩‍👧 Made With Love</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="other">✏️ Something Else</button>
+      </div>
+      <div class="field-group" id="liked-other-wrap" style="margin-top: 14px; display: none;">
+        <input
+          type="text"
+          id="liked-other"
+          class="text-input"
+          placeholder="What else made it great?"
+          autocomplete="off"
+        >
+      </div>
+    </div>
+
+    <div class="wizard-section" id="section-rating">
+      <label class="field-label">How would you rate it overall?</label>
+      <div class="star-rating" id="star-rating">
+        <button type="button" class="star" data-value="1" aria-pressed="false" aria-label="Rate 1 star">★</button>
+        <button type="button" class="star" data-value="2" aria-pressed="false" aria-label="Rate 2 stars">★</button>
+        <button type="button" class="star" data-value="3" aria-pressed="false" aria-label="Rate 3 stars">★</button>
+        <button type="button" class="star" data-value="4" aria-pressed="false" aria-label="Rate 4 stars">★</button>
+        <button type="button" class="star" data-value="5" aria-pressed="false" aria-label="Rate 5 stars">★</button>
+      </div>
+      <p class="rating-hint" id="rating-hint"></p>
+    </div>
+
+    <div class="wizard-section" id="section-eat-again">
+      <label class="field-label">Would you eat it again?</label>
+      <div class="chip-grid" id="eat-again-chips">
+        <button type="button" class="chip" aria-pressed="false" data-value="yes">😍 Absolutely</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="maybe">🤔 Maybe</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="no">🙅 Not Really</button>
+      </div>
+    </div>
+
+    <div class="wizard-section" id="section-frequency">
+      <label class="field-label">How often would you want it?</label>
+      <div class="chip-grid" id="frequency-chips">
+        <button type="button" class="chip" aria-pressed="false" data-value="all-the-time">🔁 All the Time</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="every-week">📅 Every Week</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="every-month">🗓️ Every Month</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="special-occasions">🎉 Special Occasions Only</button>
+      </div>
+    </div>
+
+    <div class="wizard-section" id="section-rank">
+      <label class="field-label">Where does it rank for you?</label>
+      <span class="field-sublabel">Your gut feeling — no need to overthink it.</span>
+      <div class="chip-grid" id="rank-chips">
+        <button type="button" class="chip" aria-pressed="false" data-value="top">🏆 Top of the List</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="favorite">⭐ One of My Favorites</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="good">👍 Pretty Good</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="fine">😐 It Was Fine</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="not-for-me">👎 Not For Me</button>
+      </div>
+    </div>
+
+    <div class="wizard-section" id="section-reflection">
+      <label class="field-label">Anything else you want to remember about it?</label>
+      <span class="field-sublabel">Totally optional — your own words, however long or short.</span>
+      <textarea
+        id="reflection-text"
+        class="text-area"
+        placeholder="What made this one stick with you..."
+        rows="3"
+      ></textarea>
+    </div>
+
+    <div class="wizard-actions">
+      <div class="wizard-actions-left">
+        <a href="index.html" class="wizard-link-start">🏠 Back to Start</a>
+        <button type="button" class="wizard-link-start" id="finish-later-btn" style="background:none;border:none;cursor:pointer;padding:0;font-family:inherit;">🏁 Finish Later</button>
+      </div>
+      <div class="wizard-actions-right">
+        <a href="#" class="btn btn-back" id="back-btn">‹ Back</a>
+        <button type="button" class="btn btn-primary" id="continue-btn" disabled>Save &amp; Continue →</button>
+      </div>
+    </div>
+
+    <p class="saved-toast" id="saved-toast">🎉 Saved! Taking you to the next part...</p>
+  </div>
+
+</main>
+
+<footer class="footer" id="site-footer"></footer>
+
+<script src="js/partials.js?v=2"></script>
+<script src="js/profile.js?v=2"></script>
+<script src="js/geo.js?v=2"></script>
+<script src="js/storage.js?v=2"></script>
+<script src="js/labels.js?v=2"></script>
+<script src="js/entry-loved.js"></script>
+</body>
+</html>

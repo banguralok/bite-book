@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>New Entry — Bite Book</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍜</text></svg>">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff8a4c">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=2">
+</head>
+<body>
+
+<header class="nav" id="site-header"></header>
+
+<main class="wizard">
+
+  <div class="wizard-progress">
+    <div class="wizard-progress-track">
+      <div class="wizard-progress-fill" style="width: 11%;"></div>
+    </div>
+    <span class="wizard-progress-label">Step 1 of 9</span>
+    <span class="autosave-badge" id="autosave-hint">💾 Saved</span>
+  </div>
+
+  <div class="wizard-card">
+    <p class="wizard-kicker">first things first</p>
+    <h1>So, what did you have? 😋</h1>
+    <p class="wizard-help">Just one item for now — you can add another entry for the next thing.</p>
+
+    <div class="field-group">
+      <input
+        type="text"
+        id="food-name"
+        class="text-input"
+        placeholder="e.g. Butter chicken"
+        autocomplete="off"
+      >
+    </div>
+
+    <div class="wizard-section" id="section-meal-type">
+      <label class="field-label">When during the day was this?</label>
+      <span class="field-sublabel" id="meal-type-hint"></span>
+      <div class="chip-grid" id="meal-type-chips">
+        <button type="button" class="chip" aria-pressed="false" data-value="breakfast">🍳 Breakfast</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="lunch">🍲 Lunch</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="high-tea">☕ High Tea</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="dinner">🍽️ Dinner</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="supper">🌙 Supper</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="snack">🍪 Snack</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="light-munching">🍿 Just Munching</button>
+      </div>
+    </div>
+
+    <div class="wizard-section" id="section-cuisine">
+      <label class="field-label">What kind of cuisine was it?</label>
+      <span class="field-sublabel">Pick the one that fits best.</span>
+      <div class="chip-grid" id="cuisine-chips">
+        <button type="button" class="chip" aria-pressed="false" data-value="indian-home">🏠 Indian, Homemade</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="indian-restaurant">🍛 Indian, Restaurant</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="italian">🍝 Italian</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="chinese">🥡 Chinese</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="thai">🌶️ Thai</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="mexican">🌮 Mexican</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="japanese">🍣 Japanese</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="mediterranean">🥙 Mediterranean</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="american">🍔 American</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="continental">🍞 Continental</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="other">✏️ Something Else</button>
+      </div>
+      <div class="field-group" id="cuisine-other-wrap" style="margin-top: 14px; display: none;">
+        <input
+          type="text"
+          id="cuisine-other"
+          class="text-input"
+          placeholder="Tell us what kind..."
+          autocomplete="off"
+        >
+      </div>
+    </div>
+
+    <div class="wizard-actions">
+      <div class="wizard-actions-left">
+        <a href="index.html" class="wizard-link-start">🏠 Back to Start</a>
+        <button type="button" class="wizard-link-start" id="finish-later-btn" style="background:none;border:none;cursor:pointer;padding:0;font-family:inherit;">🏁 Finish Later</button>
+      </div>
+      <div class="wizard-actions-right">
+        <a href="index.html" class="btn btn-back">‹ Back</a>
+        <button type="button" class="btn btn-primary" id="continue-btn" disabled>Save &amp; Continue →</button>
+      </div>
+    </div>
+
+    <p class="saved-toast" id="saved-toast">🎉 Saved! Taking you to the next part...</p>
+  </div>
+
+</main>
+
+<footer class="footer" id="site-footer"></footer>
+
+<script src="js/partials.js?v=2"></script>
+<script src="js/profile.js?v=2"></script>
+<script src="js/geo.js?v=2"></script>
+<script src="js/storage.js?v=2"></script>
+<script src="js/labels.js?v=2"></script>
+<script src="js/entry.js?v=2"></script>
+</body>
+</html>

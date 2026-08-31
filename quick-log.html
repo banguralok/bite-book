@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quick Log — Bite Book</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍜</text></svg>">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff8a4c">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=2">
+</head>
+<body>
+
+<header class="nav" id="site-header"></header>
+
+<main class="wizard">
+  <div class="wizard-card" style="margin-top: 40px;">
+    <p class="wizard-kicker">for when there's no time to lose</p>
+    <h1>⚡ Quick Log</h1>
+    <p class="wizard-help">Just the food. We'll quietly fill in the rest — you can always add more later.</p>
+
+    <div class="field-group">
+      <input
+        type="text"
+        id="quick-food-name"
+        class="text-input"
+        placeholder="What did you eat or drink?"
+        autocomplete="off"
+        style="font-size: 1.2rem; padding: 20px 22px;"
+      >
+    </div>
+
+    <div class="quick-capture-preview" id="capture-preview">
+      <div class="quick-capture-row">
+        <span class="quick-capture-icon">🕰️</span>
+        <span id="capture-when">—</span>
+      </div>
+      <div class="quick-capture-row">
+        <span class="quick-capture-icon">📍</span>
+        <span id="capture-where">Finding your location...</span>
+      </div>
+      <div class="quick-capture-row" id="capture-context-row" style="display: none;">
+        <span class="quick-capture-icon">✨</span>
+        <span id="capture-context"></span>
+      </div>
+    </div>
+
+    <div class="wizard-actions" style="border-top: none; padding-top: 8px;">
+      <a href="entry.html" class="wizard-link-start">📝 Use the Full Form Instead</a>
+      <div class="wizard-actions-right">
+        <button type="button" class="btn btn-primary btn-large" id="log-it-btn" disabled>⚡ Log It</button>
+      </div>
+    </div>
+
+    <p class="saved-toast" id="saved-toast">🎉 Logged! Add more details anytime from My Entries.</p>
+  </div>
+</main>
+
+<footer class="footer" id="site-footer"></footer>
+
+<script src="js/partials.js?v=2"></script>
+<script src="js/storage.js?v=2"></script>
+<script src="js/labels.js?v=2"></script>
+<script src="js/profile.js?v=2"></script>
+<script src="js/geo.js?v=2"></script>
+<script src="js/quick-log.js"></script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Entries — Bite Book</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍜</text></svg>">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff8a4c">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=2">
+</head>
+<body>
+
+<header class="nav" id="site-header"></header>
+
+<main class="entries-page">
+  <div class="entries-header">
+    <p class="eyebrow">your story so far</p>
+    <h1>My Entries</h1>
+    <p class="section-sub" style="margin: 12px 0 0;">Pick one up where you left off, or start something new.</p>
+  </div>
+
+  <div class="entries-toolbar">
+    <input type="search" id="search-input" class="text-input" placeholder="🔍 Search your entries...">
+    <div class="chip-grid" id="status-filter-chips">
+      <button type="button" class="chip small selected" aria-pressed="true" data-value="all">All</button>
+      <button type="button" class="chip small" aria-pressed="false" data-value="complete">✓ Complete</button>
+      <button type="button" class="chip small" aria-pressed="false" data-value="draft">Draft</button>
+    </div>
+  </div>
+
+  <div class="entries-actions-row">
+    <a href="stats.html" class="link-pill">📊 Stats</a>
+    <a href="ranking.html" class="link-pill">🏆 Rankings</a>
+    <button type="button" class="link-pill" id="export-btn">⬇️ Export</button>
+    <button type="button" class="link-pill" id="import-btn">⬆️ Import</button>
+    <input type="file" id="import-file-input" accept=".json" style="display: none;">
+  </div>
+  <p class="upload-status" id="import-export-status"></p>
+
+  <div id="entries-list" class="entries-list"></div>
+
+  <div id="no-results-state" class="empty-state" style="display: none;">
+    <div class="empty-state-icon">🔍</div>
+    <h3>No matches</h3>
+    <p>Try a different search or filter.</p>
+  </div>
+
+  <div id="empty-state" class="empty-state" style="display: none;">
+    <div class="empty-state-icon">🍽️</div>
+    <h3>Nothing here yet</h3>
+    <p>Your first entry is just a tap away.</p>
+    <a href="entry.html" class="btn btn-primary">Start My First Entry</a>
+  </div>
+</main>
+
+<div class="undo-toast" id="undo-toast">
+  <span id="undo-toast-text"></span>
+  <button type="button" id="undo-toast-btn">Undo</button>
+</div>
+
+<footer class="footer" id="site-footer"></footer>
+
+<script src="js/partials.js?v=2"></script>
+<script src="js/profile.js?v=2"></script>
+<script src="js/geo.js?v=2"></script>
+<script src="js/storage.js?v=2"></script>
+<script src="js/labels.js?v=2"></script>
+<script src="js/entries-list.js?v=2"></script>
+</body>
+</html>

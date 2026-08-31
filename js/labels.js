@@ -1,0 +1,336 @@
+function setChipSelected(chip, isSelected) {
+  chip.classList.toggle('selected', isSelected);
+  chip.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+}
+
+function guessMealTypeFromTime() {
+  const hour = new Date().getHours();
+  if (hour >= 4 && hour < 11) return 'breakfast';
+  if (hour >= 11 && hour < 15) return 'lunch';
+  if (hour >= 15 && hour < 18) return 'high-tea';
+  if (hour >= 18 && hour < 22) return 'dinner';
+  return 'supper';
+}
+
+function guessTimeOfDayFromTime() {
+  const hour = new Date().getHours();
+  if (hour >= 4 && hour < 7) return 'early-morning';
+  if (hour >= 7 && hour < 11) return 'morning';
+  if (hour >= 11 && hour < 14) return 'midday';
+  if (hour >= 14 && hour < 17) return 'afternoon';
+  if (hour >= 17 && hour < 20) return 'evening';
+  if (hour >= 20 && hour < 23) return 'night';
+  return 'late-night';
+}
+
+function isSafeUrl(url) {
+  return typeof url === 'string' && /^https?:\/\//i.test(url.trim());
+}
+
+function normalizeLinkInput(value) {
+  const trimmed = (value || '').trim();
+  if (!trimmed) return null;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed)) return null;
+  return `https://${trimmed}`;
+}
+
+function flashAutosaveBadge(el, success) {
+  if (!el) return;
+  clearTimeout(el._flashTimer);
+  if (success) {
+    el.textContent = '💾 Saved';
+    el.classList.remove('error');
+    el.classList.add('visible');
+    el._flashTimer = setTimeout(() => el.classList.remove('visible'), 1600);
+  } else {
+    el.textContent = "⚠️ Not saved";
+    el.classList.add('visible', 'error');
+    el._flashTimer = setTimeout(() => {
+      el.classList.remove('visible', 'error');
+      el.textContent = '💾 Saved';
+    }, 4000);
+  }
+}
+
+const MEAL_TYPE_LABELS = {
+  'breakfast': '🍳 Breakfast',
+  'lunch': '🍲 Lunch',
+  'high-tea': '☕ High Tea',
+  'dinner': '🍽️ Dinner',
+  'supper': '🌙 Supper',
+  'snack': '🍪 Snack',
+  'light-munching': '🍿 Just Munching',
+};
+
+const CUISINE_LABELS = {
+  'indian-home': '🏠 Indian, Homemade',
+  'indian-restaurant': '🍛 Indian, Restaurant',
+  'italian': '🍝 Italian',
+  'chinese': '🥡 Chinese',
+  'thai': '🌶️ Thai',
+  'mexican': '🌮 Mexican',
+  'japanese': '🍣 Japanese',
+  'mediterranean': '🥙 Mediterranean',
+  'american': '🍔 American',
+  'continental': '🍞 Continental',
+};
+
+const TIME_OF_DAY_LABELS = {
+  'early-morning': '🌅 Early Morning',
+  'morning': '🌤️ Morning',
+  'midday': '☀️ Midday',
+  'afternoon': '🌇 Afternoon',
+  'evening': '🌆 Evening',
+  'night': '🌃 Night',
+  'late-night': '🌙 Late Night',
+};
+
+const PLACE_TYPE_LABELS = {
+  'home': '🏠 Home',
+  'restaurant': '🍽️ Restaurant / Café',
+  'someone-else': '🏡 Someone Else\'s Place',
+  'work-school': '🏫 Work / School',
+  'on-the-go': '🚗 On the Go',
+  'travel': '✈️ Travelling',
+};
+
+const COMPANION_TYPE_LABELS = {
+  'solo': '🧍 Just Me',
+  'family': '👨‍👩‍👧‍👦 Family',
+  'friends': '👫 Friends',
+  'someone-special': '💑 Someone Special',
+  'classmates-coworkers': '👥 Classmates / Coworkers',
+  'big-group': '🎉 A Big Group',
+  'other': '✏️ Someone Else',
+};
+
+function companionTypeLabel(value) {
+  if (!value) return '';
+  return COMPANION_TYPE_LABELS[value] || `✏️ ${value}`;
+}
+
+function companionSummaryLabel(entry) {
+  const types = entry.companionTypes || (entry.companionType ? [entry.companionType] : []);
+  if (types.length === 0) return '';
+  const base = types.map((t) => companionTypeLabel(t)).join(' + ');
+  const extras = [entry.companionDetail, entry.companionNames].filter(Boolean).join(', ');
+  return extras ? `${base} (${extras})` : base;
+}
+
+const MAKER_TYPE_LABELS = {
+  'me': '🙋 I Made It Myself',
+  'mom': '👩‍🍳 Mom',
+  'dad': '👨‍🍳 Dad',
+  'grandparent': '👵 Grandma / Grandpa',
+  'other-family': '👨‍👩‍👧 Another Family Member',
+  'chef-restaurant': '🧑‍🍳 A Chef / Restaurant',
+  'store-bought': '🏪 Store-Bought / Packaged',
+};
+
+function makerTypeLabel(value) {
+  if (!value) return '';
+  return MAKER_TYPE_LABELS[value] || `✏️ ${value}`;
+}
+
+function makerSummaryLabel(entry) {
+  if (!entry.madeBy) return '';
+  const base = makerTypeLabel(entry.madeBy);
+  if (entry.madeByName) return `${base} (${entry.madeByName})`;
+  return base;
+}
+
+const REASON_LABELS = {
+  'birthday': '🎂 Birthday',
+  'anniversary': '💍 Anniversary',
+  'celebration': '🎉 Special Celebration',
+  'comfort': '🥰 Comfort Food',
+  'craving': '😋 Just Craved It',
+  'requested': '🙏 Someone Asked For It',
+  'everyday': '🍽️ Everyday Meal',
+};
+
+const DATE_RELEVANT_REASONS = ['birthday', 'anniversary', 'celebration', 'other'];
+
+function reasonLabel(value) {
+  if (!value) return '';
+  return REASON_LABELS[value] || `✏️ ${value}`;
+}
+
+function reasonSummaryLabel(entry) {
+  if (!entry.reason) return '';
+  const base = reasonLabel(entry.reason);
+  if (entry.occasionDate) return `${base} (${formatDateLabel(entry.occasionDate)})`;
+  return base;
+}
+
+const LINK_PLATFORM_ICONS = [
+  [/instagram\.com/i, '📸 Instagram'],
+  [/(youtube\.com|youtu\.be)/i, '▶️ YouTube'],
+  [/tiktok\.com/i, '🎵 TikTok'],
+  [/pinterest\./i, '📌 Pinterest'],
+  [/(facebook\.com|fb\.watch)/i, '📘 Facebook'],
+  [/(twitter\.com|x\.com)/i, '🐦 X / Twitter'],
+  [/reddit\.com/i, '👽 Reddit'],
+];
+
+function linkPlatformLabel(url) {
+  if (!url) return '';
+  const match = LINK_PLATFORM_ICONS.find(([pattern]) => pattern.test(url));
+  return match ? match[1] : '🔗 Link';
+}
+
+function fileKindIcon(type) {
+  if (!type) return '📎';
+  if (type.startsWith('image/')) return '🖼️';
+  if (type === 'application/pdf') return '📄';
+  return '📎';
+}
+
+function ingredientsSummaryLabel(entry) {
+  const parts = [];
+  if (entry.ingredientsText) parts.push('📝 Notes');
+  if (entry.ingredientsLink) parts.push(linkPlatformLabel(entry.ingredientsLink));
+  if (entry.ingredientsFile) parts.push(`${fileKindIcon(entry.ingredientsFile.type)} Attached`);
+  return parts.join(' + ');
+}
+
+function mediaSummaryLabel(entry) {
+  const photos = entry.photos || [];
+  const videos = entry.videos || [];
+  const parts = [];
+  if (photos.length) parts.push(`📸 ${photos.length} Photo${photos.length === 1 ? '' : 's'}`);
+  if (videos.length) parts.push(`🎬 ${videos.length} Video${videos.length === 1 ? '' : 's'}`);
+  return parts.join(' + ');
+}
+
+const LIKED_QUALITY_LABELS = {
+  'delicious': '😋 Delicious Taste',
+  'spice-level': '🌶️ Perfect Spice Level',
+  'healthy': '🍃 Felt Healthy',
+  'indulgent': '🧈 Rich & Indulgent',
+  'comforting': '🥵 Warm & Comforting',
+  'refreshing': '🧊 Refreshing',
+  'texture': '💥 Great Texture',
+  'sweet': '🧁 Perfectly Sweet',
+  'nostalgic': '🏡 Tasted Like Home',
+  'new': '🆕 Something New & Different',
+  'love': '👨‍👩‍👧 Made With Love',
+};
+
+function likedQualityLabel(value) {
+  if (!value) return '';
+  return LIKED_QUALITY_LABELS[value] || `✏️ ${value}`;
+}
+
+function likedQualitiesSummaryLabel(entry) {
+  const qualities = entry.likedQualities || [];
+  if (qualities.length === 0) return '';
+  const labels = qualities.map((q) => likedQualityLabel(q));
+  if (labels.length <= 2) return labels.join(' + ');
+  return `${labels.slice(0, 2).join(' + ')} +${labels.length - 2} more`;
+}
+
+function ratingStarsLabel(rating) {
+  if (!rating) return '';
+  return '★'.repeat(rating) + '☆'.repeat(5 - rating);
+}
+
+const EAT_AGAIN_LABELS = {
+  'yes': '😍 Absolutely',
+  'maybe': '🤔 Maybe',
+  'no': '🙅 Not Really',
+};
+
+function eatAgainLabel(value) {
+  return EAT_AGAIN_LABELS[value] || '';
+}
+
+const FREQUENCY_LABELS = {
+  'all-the-time': '🔁 All the Time',
+  'every-week': '📅 Every Week',
+  'every-month': '🗓️ Every Month',
+  'special-occasions': '🎉 Special Occasions Only',
+};
+
+function frequencyLabel(value) {
+  return FREQUENCY_LABELS[value] || '';
+}
+
+const RANK_LABELS = {
+  'top': '🏆 Top of the List',
+  'favorite': '⭐ One of My Favorites',
+  'good': '👍 Pretty Good',
+  'fine': '😐 It Was Fine',
+  'not-for-me': '👎 Not For Me',
+};
+
+function rankLabel(value) {
+  return RANK_LABELS[value] || '';
+}
+
+function placeTypeLabel(value) {
+  if (!value) return '';
+  return PLACE_TYPE_LABELS[value] || `✏️ ${value}`;
+}
+
+function mealTypeLabel(value) {
+  return MEAL_TYPE_LABELS[value] || '';
+}
+
+function cuisineLabel(value) {
+  if (!value) return '';
+  return CUISINE_LABELS[value] || `✏️ ${value}`;
+}
+
+function timeOfDayLabel(value) {
+  return TIME_OF_DAY_LABELS[value] || '';
+}
+
+function toDateInputValue(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function parseDateInputValue(value) {
+  const [y, m, d] = value.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function formatDateLabel(dateStr) {
+  if (!dateStr) return '';
+  const date = parseDateInputValue(dateStr);
+  const today = new Date();
+  const todayStr = toDateInputValue(today);
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = toDateInputValue(yesterday);
+
+  const weekdayMonthDay = date.toLocaleDateString(undefined, {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  });
+
+  if (dateStr === todayStr) return `Today — ${weekdayMonthDay}`;
+  if (dateStr === yesterdayStr) return `Yesterday — ${weekdayMonthDay}`;
+  return weekdayMonthDay;
+}
+
+function placeSummaryLabel(entry) {
+  return entry.placeName || '';
+}
+
+function dateTimeSummaryLabel(entry) {
+  if (!entry.ateOn) return '';
+  const dateLabel = formatDateLabel(entry.ateOn);
+  if (entry.timeMode === 'exact' && entry.exactTime) {
+    return `${dateLabel}, ${entry.exactTime}`;
+  }
+  if (entry.timeOfDay) {
+    return `${dateLabel} · ${timeOfDayLabel(entry.timeOfDay)}`;
+  }
+  return dateLabel;
+}

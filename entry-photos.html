@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Photos & Videos — Bite Book</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍜</text></svg>">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff8a4c">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=2">
+</head>
+<body>
+
+<header class="nav" id="site-header"></header>
+
+<main class="wizard">
+
+  <div class="wizard-progress">
+    <div class="wizard-progress-track">
+      <div class="wizard-progress-fill" style="width: 100%;"></div>
+    </div>
+    <span class="wizard-progress-label">Step 9 of 9</span>
+    <span class="autosave-badge" id="autosave-hint">💾 Saved</span>
+  </div>
+
+  <div class="wizard-card">
+    <p class="wizard-kicker">the last step</p>
+    <h1>Got any photos or videos? 📸</h1>
+    <p class="wizard-help">
+      The food, the people, the table, the mess — anything that belongs with this memory. Totally optional.
+    </p>
+
+    <div class="field-group">
+      <label class="field-label">Photos</label>
+      <span class="field-sublabel">Up to 6 — we'll shrink them a bit to save space.</span>
+      <div class="photo-grid" id="photo-grid">
+        <button type="button" class="photo-tile-add" id="photo-add-tile">
+          <span class="plus-icon" aria-hidden="true">＋</span>
+          <span>Add Photo</span>
+        </button>
+      </div>
+      <input type="file" id="photo-input" accept="image/*" multiple style="display: none;">
+      <p class="upload-status" id="photo-status"></p>
+    </div>
+
+    <div class="divider-label">and / or</div>
+
+    <div class="field-group">
+      <label class="field-label">Videos</label>
+      <span class="field-sublabel">Short clips can be uploaded directly — for anything longer, paste a link instead.</span>
+
+      <div class="video-list" id="video-list"></div>
+
+      <button type="button" class="file-upload-btn" id="video-upload-btn" style="margin-top: 12px;">🎬 Upload a Short Clip</button>
+      <input type="file" id="video-input" accept="video/*" style="display: none;">
+
+      <div class="video-link-row">
+        <input
+          type="url"
+          id="video-link-input"
+          class="text-input"
+          placeholder="...or paste a video link (YouTube, Instagram, phone backup)"
+          autocomplete="off"
+        >
+        <button type="button" class="btn-add-link" id="video-link-add-btn">Add</button>
+      </div>
+      <p class="upload-status" id="video-status"></p>
+    </div>
+
+    <div class="wizard-actions">
+      <a href="index.html" class="wizard-link-start">🏠 Back to Start</a>
+      <div class="wizard-actions-right">
+        <a href="#" class="btn btn-back" id="back-btn">‹ Back</a>
+        <button type="button" class="btn btn-primary" id="continue-btn">🎉 Finish Entry</button>
+      </div>
+    </div>
+
+    <p class="saved-toast" id="saved-toast">🎉 Your food story is complete!</p>
+  </div>
+
+</main>
+
+<footer class="footer" id="site-footer"></footer>
+
+<script src="js/partials.js?v=2"></script>
+<script src="js/profile.js?v=2"></script>
+<script src="js/geo.js?v=2"></script>
+<script src="js/storage.js?v=2"></script>
+<script src="js/labels.js?v=2"></script>
+<script src="js/entry-photos.js"></script>
+</body>
+</html>

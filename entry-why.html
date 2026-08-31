@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Why It Was Made — Bite Book</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍜</text></svg>">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff8a4c">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=2">
+</head>
+<body>
+
+<header class="nav" id="site-header"></header>
+
+<main class="wizard">
+
+  <div class="wizard-progress">
+    <div class="wizard-progress-track">
+      <div class="wizard-progress-fill" style="width: 67%;"></div>
+    </div>
+    <span class="wizard-progress-label">Step 6 of 9</span>
+    <span class="autosave-badge" id="autosave-hint">💾 Saved</span>
+  </div>
+
+  <div class="wizard-card">
+    <p class="wizard-kicker">the backstory</p>
+    <h1>Why was it made? 🎈</h1>
+    <p class="wizard-help">Every dish has a reason — even if that reason is "just because."</p>
+
+    <div class="field-group">
+      <div class="chip-grid" id="reason-chips">
+        <button type="button" class="chip" aria-pressed="false" data-value="birthday">🎂 Birthday</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="anniversary">💍 Anniversary</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="celebration">🎉 Special Celebration</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="comfort">🥰 Comfort Food</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="craving">😋 Just Craved It</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="requested">🙏 Someone Asked For It</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="everyday">🍽️ Everyday Meal</button>
+        <button type="button" class="chip" aria-pressed="false" data-value="other">✏️ Something Else</button>
+      </div>
+      <div class="field-group" id="reason-other-wrap" style="margin-top: 14px; display: none;">
+        <input
+          type="text"
+          id="reason-other"
+          class="text-input"
+          placeholder="What was the occasion?"
+          autocomplete="off"
+        >
+      </div>
+    </div>
+
+    <div class="wizard-section" id="section-occasion-date">
+      <label class="field-label">Is there a date worth remembering for this?</label>
+      <span class="field-sublabel" id="occasion-date-hint"></span>
+      <div class="field-group">
+        <input type="date" id="occasion-date" class="text-input">
+      </div>
+    </div>
+
+    <div class="wizard-actions">
+      <div class="wizard-actions-left">
+        <a href="index.html" class="wizard-link-start">🏠 Back to Start</a>
+        <button type="button" class="wizard-link-start" id="finish-later-btn" style="background:none;border:none;cursor:pointer;padding:0;font-family:inherit;">🏁 Finish Later</button>
+      </div>
+      <div class="wizard-actions-right">
+        <a href="#" class="btn btn-back" id="back-btn">‹ Back</a>
+        <button type="button" class="btn btn-primary" id="continue-btn" disabled>Save &amp; Continue →</button>
+      </div>
+    </div>
+
+    <p class="saved-toast" id="saved-toast">🎉 Saved! Taking you to the next part...</p>
+  </div>
+
+</main>
+
+<footer class="footer" id="site-footer"></footer>
+
+<script src="js/partials.js?v=2"></script>
+<script src="js/profile.js?v=2"></script>
+<script src="js/geo.js?v=2"></script>
+<script src="js/storage.js?v=2"></script>
+<script src="js/labels.js?v=2"></script>
+<script src="js/entry-why.js"></script>
+</body>
+</html>
