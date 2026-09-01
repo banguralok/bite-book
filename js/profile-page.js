@@ -9,6 +9,10 @@ document.addEventListener('bitebook:ready', () => {
   const saveBtn = document.getElementById('save-profile-btn');
   const savedToast = document.getElementById('saved-toast');
 
+  const newPasswordInput = document.getElementById('new-password');
+  const setPasswordBtn = document.getElementById('set-password-btn');
+  const passwordStatus = document.getElementById('password-status');
+
   const geminiKeyInput = document.getElementById('gemini-api-key');
   const saveKeyBtn = document.getElementById('save-key-btn');
   const removeKeyBtn = document.getElementById('remove-key-btn');
@@ -38,6 +42,26 @@ document.addEventListener('bitebook:ready', () => {
 
   avatarChips.forEach((chip) => {
     chip.addEventListener('click', () => selectAvatar(chip.dataset.value));
+  });
+
+  setPasswordBtn.addEventListener('click', async () => {
+    const password = newPasswordInput.value;
+    passwordStatus.classList.remove('error');
+    if (!password || password.length < 8) {
+      passwordStatus.textContent = 'Use at least 8 characters.';
+      passwordStatus.classList.add('error');
+      return;
+    }
+    setPasswordBtn.disabled = true;
+    const { error } = await supabaseClient.auth.updateUser({ password });
+    setPasswordBtn.disabled = false;
+    if (error) {
+      passwordStatus.textContent = `Couldn't set password: ${error.message}`;
+      passwordStatus.classList.add('error');
+    } else {
+      passwordStatus.textContent = '✅ Password set — you can use it next time you sign in.';
+      newPasswordInput.value = '';
+    }
   });
 
   function resetGeoButton() {

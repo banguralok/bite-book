@@ -51,6 +51,18 @@
       </div>
     </div>
 
+    <div class="field-group" id="password-settings">
+      <label class="field-label">🔒 Password</label>
+      <span class="field-sublabel">
+        Set a password so you can sign in directly next time — no need to wait for an email link.
+      </span>
+      <div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
+        <input type="password" id="new-password" class="text-input" style="flex: 1; min-width: 180px;" placeholder="New password (8+ characters)" autocomplete="new-password">
+        <button type="button" class="btn btn-back" id="set-password-btn">Set Password</button>
+      </div>
+      <p class="upload-status" id="password-status"></p>
+    </div>
+
     <div class="field-group">
       <label class="field-label">Special dates</label>
       <span class="field-sublabel">Optional — we'll quietly notice when a meal falls on one of these.</span>

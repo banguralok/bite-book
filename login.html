@@ -17,20 +17,24 @@
   <div class="wizard-card" style="margin-top: 60px;">
     <p class="wizard-kicker">welcome back</p>
     <h1>🍜 Sign In to Bite Book</h1>
-    <p class="wizard-help">
-      Bite Book is invite-only — enter the email it was shared with, and we'll send you a link to sign in. No password to remember.
+    <p class="wizard-help" id="login-help">
+      Bite Book is invite-only. Sign in with the password you set, or email yourself a one-time link if you haven't set one yet.
     </p>
 
     <div class="field-group">
       <input type="email" id="login-email" class="text-input" placeholder="you@example.com" autocomplete="email">
     </div>
 
+    <div class="field-group" id="password-wrap">
+      <input type="password" id="login-password" class="text-input" placeholder="Password" autocomplete="current-password">
+    </div>
+
     <p class="upload-status" id="login-status"></p>
 
     <div class="wizard-actions" style="border-top: none; padding-top: 8px;">
-      <span></span>
+      <button type="button" class="wizard-link-start" id="toggle-mode-btn" style="background:none;border:none;cursor:pointer;padding:0;font-family:inherit;">✉️ Email me a link instead</button>
       <div class="wizard-actions-right">
-        <button type="button" class="btn btn-primary btn-large" id="login-btn">✉️ Send Me a Link</button>
+        <button type="button" class="btn btn-primary btn-large" id="login-btn">Sign In</button>
       </div>
     </div>
   </div>
