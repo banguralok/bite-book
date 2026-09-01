@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('bitebook:ready', () => {
   const findBtn = document.getElementById('find-duplicates-btn');
   const statusEl = document.getElementById('dedupe-status');
   const groupsEl = document.getElementById('dedupe-groups');

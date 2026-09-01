@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('bitebook:ready', () => {
   const dateChips = document.querySelectorAll('#date-chips .chip');
   const datePickerWrap = document.getElementById('date-picker-wrap');
   const datePicker = document.getElementById('date-picker');

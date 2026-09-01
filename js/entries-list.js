@@ -35,7 +35,7 @@ function resumePageFor(entry) {
   return STEP_SEQUENCE[STEP_SEQUENCE.length - 1].page;
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('bitebook:ready', () => {
   const listEl = document.getElementById('entries-list');
   const emptyEl = document.getElementById('empty-state');
   const noResultsEl = document.getElementById('no-results-state');

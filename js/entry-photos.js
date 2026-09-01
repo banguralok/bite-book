@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('bitebook:ready', () => {
   const photoGrid = document.getElementById('photo-grid');
   const photoAddTile = document.getElementById('photo-add-tile');
   const photoInput = document.getElementById('photo-input');

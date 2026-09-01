@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('bitebook:ready', () => {
   const foodInput = document.getElementById('quick-food-name');
   const captureWhen = document.getElementById('capture-when');
   const captureWhere = document.getElementById('capture-where');

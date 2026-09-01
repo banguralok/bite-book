@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('bitebook:ready', () => {
   const likedChips = document.querySelectorAll('#liked-chips .chip');
   const likedOtherWrap = document.getElementById('liked-other-wrap');
   const likedOtherInput = document.getElementById('liked-other');

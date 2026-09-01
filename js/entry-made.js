@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('bitebook:ready', () => {
   const makerChips = document.querySelectorAll('#maker-chips .chip');
   const makerOtherWrap = document.getElementById('maker-other-wrap');
   const makerOtherInput = document.getElementById('maker-other');

@@ -31,6 +31,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (typeof requireAuth !== 'undefined') {
     const session = await requireAuth();
     if (!session) return; // requireAuth() already redirected to login.html
+    if (typeof BiteBookProfile !== 'undefined') {
+      await BiteBookProfile.load();
+    }
   }
 
   const header = document.getElementById('site-header');
@@ -46,6 +49,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
   if (footer) footer.innerHTML = SITE_FOOTER;
+
+  // Every page-controller script waits for this instead of DOMContentLoaded
+  // directly, so BiteBookProfile.get() is guaranteed populated by the time
+  // any page touches it — DOMContentLoaded listeners across separate
+  // <script> tags don't wait for each other, so without this signal a
+  // page's own script could run before the profile finished loading.
+  document.dispatchEvent(new CustomEvent('bitebook:ready'));
 });
 
 if ('serviceWorker' in navigator) {

@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('bitebook:ready', () => {
   const textInput = document.getElementById('smart-entry-text');
   const submitBtn = document.getElementById('smart-entry-btn');
   const statusEl = document.getElementById('smart-entry-status');

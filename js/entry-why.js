@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('bitebook:ready', () => {
   const reasonChips = document.querySelectorAll('#reason-chips .chip');
   const reasonOtherWrap = document.getElementById('reason-other-wrap');
   const reasonOtherInput = document.getElementById('reason-other');

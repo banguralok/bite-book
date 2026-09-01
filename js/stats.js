@@ -29,7 +29,7 @@ function barBlock(title, pairs, labelFn) {
   return `<div class="stat-block"><h3>${title}</h3>${rows}</div>`;
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('bitebook:ready', () => {
   const container = document.getElementById('stats-content');
   const entries = BiteBookStorage.listEntries();
 

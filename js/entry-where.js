@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('bitebook:ready', () => {
   const placeNameInput = document.getElementById('place-name');
   const placeNameSuggestions = document.getElementById('place-name-suggestions');
   const useGeoBtn = document.getElementById('use-geo-btn');

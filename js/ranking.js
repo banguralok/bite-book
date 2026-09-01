@@ -4,7 +4,7 @@ function escapeHtmlRank(str) {
   return div.innerHTML;
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('bitebook:ready', () => {
   const listEl = document.getElementById('ranking-list');
   const emptyEl = document.getElementById('ranking-empty');
 

@@ -245,7 +245,7 @@ function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
   return y + lineHeight;
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('bitebook:ready', () => {
   const container = document.getElementById('story-content');
   const params = new URLSearchParams(window.location.search);
   const id = params.get('id');

@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('bitebook:ready', () => {
   const companionChips = document.querySelectorAll('#companion-chips .chip');
   const companionOtherWrap = document.getElementById('companion-other-wrap');
   const companionOtherInput = document.getElementById('companion-other');

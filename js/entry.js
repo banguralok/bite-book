@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('bitebook:ready', () => {
   const foodInput = document.getElementById('food-name');
   const mealSection = document.getElementById('section-meal-type');
   const cuisineSection = document.getElementById('section-cuisine');

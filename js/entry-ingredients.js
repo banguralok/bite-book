@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('bitebook:ready', () => {
   const textInput = document.getElementById('ingredients-text');
   const linkInput = document.getElementById('ingredients-link');
   const linkBadge = document.getElementById('link-platform-badge');

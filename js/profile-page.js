@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('bitebook:ready', () => {
   const nameInput = document.getElementById('profile-name');
   const avatarChips = document.querySelectorAll('#avatar-chips .chip');
   const birthdayInput = document.getElementById('profile-birthday');
@@ -204,6 +204,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function restoreFromProfile() {
     const profile = BiteBookProfile.get();
+
+    const emailLine = document.getElementById('profile-email-line');
+    if (profile && profile.email && emailLine) {
+      emailLine.textContent = `Signed in as ${profile.email}`;
+    }
+
+    const isFirstTime = new URLSearchParams(window.location.search).get('welcome') === '1';
+    if (isFirstTime) {
+      const heading = document.getElementById('profile-heading');
+      const subhead = document.getElementById('profile-subhead');
+      if (heading) heading.textContent = 'Welcome to Bite Book! 👋';
+      if (subhead) subhead.textContent = "Let's get your profile set up — pick a name and avatar so people know it's you.";
+    }
+
     if (!profile) return;
     if (profile.name) nameInput.value = profile.name;
     if (profile.avatar) selectAvatar(profile.avatar);
@@ -215,7 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderFamilyList();
   }
 
-  saveBtn.addEventListener('click', () => {
+  saveBtn.addEventListener('click', async () => {
     const profile = {
       name: nameInput.value.trim() || null,
       avatar: selectedAvatar,
@@ -224,11 +238,25 @@ document.addEventListener('DOMContentLoaded', () => {
       homeAddress: homeAddressInput.value.trim() || null,
       homeCoords: homeAddressInput.value.trim() ? homeCoords : null,
       familyMembers,
-      updatedAt: new Date().toISOString(),
     };
-    BiteBookProfile.save(profile);
-    savedToast.classList.add('visible');
-    setTimeout(() => savedToast.classList.remove('visible'), 2000);
+    saveBtn.disabled = true;
+    const ok = await BiteBookProfile.save(profile);
+    saveBtn.disabled = false;
+    if (ok) {
+      savedToast.classList.add('visible');
+      setTimeout(() => savedToast.classList.remove('visible'), 2000);
+      const wasFirstTime = new URLSearchParams(window.location.search).get('welcome') === '1';
+      if (wasFirstTime) {
+        setTimeout(() => { window.location.href = 'entries.html'; }, 900);
+      }
+    } else {
+      savedToast.textContent = "⚠️ Couldn't save — check your connection and try again.";
+      savedToast.classList.add('visible');
+      setTimeout(() => {
+        savedToast.classList.remove('visible');
+        savedToast.textContent = '🎉 Profile saved!';
+      }, 3000);
+    }
   });
 
   restoreFromProfile();
