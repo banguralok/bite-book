@@ -35,10 +35,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if (error) {
-      showStatus(
-        "Couldn't send a link — double check the email, or make sure it's the one Bite Book was shared with.",
-        true
-      );
+      const detail = error.status === 429
+        ? "Too many attempts — Supabase's free tier rate-limits sign-in emails. Wait a few minutes and try again."
+        : `Couldn't send a link (${error.status || '?'}: ${error.message || 'unknown error'}). Check the email, or check Supabase's Auth logs for detail.`;
+      showStatus(detail, true);
       loginBtn.disabled = false;
       loginBtn.textContent = '✉️ Send Me a Link';
     } else {
