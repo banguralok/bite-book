@@ -195,11 +195,13 @@ create policy "trips: owner has full access"
   with check ( owner_id = auth.uid() );
 
 -- ---------- auto-create a profile row on signup ----------
+-- Inserting into profiles alone is enough — profiles_sync_directory
+-- (above) fires on that insert and creates the profile_directory row
+-- itself. A second explicit insert here would collide with it.
 create function public.handle_new_user()
 returns trigger language plpgsql security definer as $$
 begin
   insert into public.profiles (id) values (new.id);
-  insert into public.profile_directory (id) values (new.id);
   return new;
 end;
 $$;
