@@ -408,6 +408,20 @@ function dateTimeSummaryLabel(entry) {
   return dateLabel;
 }
 
+// Chrome/Firefox/Edge generally can't decode HEIC/HEIF natively (the format
+// iPhones save photos in by default), so a plain <img>-based decode — what
+// compressImageFile relies on — silently fails there. This converts to a
+// JPEG blob first via heic2any (WASM libheif, no native codec needed), so
+// the rest of the pipeline never has to know the original was HEIC.
+async function normalizeToDecodableImage(file) {
+  const isHeic = /\.(heic|heif)$/i.test(file.name)
+    || file.type === 'image/heic' || file.type === 'image/heif';
+  if (!isHeic || typeof heic2any === 'undefined') return file;
+
+  const converted = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
+  return Array.isArray(converted) ? converted[0] : converted;
+}
+
 function compressImageFile(file, options) {
   const maxDim = (options && options.maxDim) || 1024;
   const maxBytes = (options && options.maxBytes) || 700 * 1024;

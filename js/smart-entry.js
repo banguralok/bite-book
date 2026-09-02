@@ -46,12 +46,18 @@ document.addEventListener('bitebook:ready', () => {
     const file = photoInput.files && photoInput.files[0];
     photoInput.value = '';
     if (!file) return;
+
+    const isHeic = /\.(heic|heif)$/i.test(file.name) || file.type === 'image/heic' || file.type === 'image/heif';
+    if (isHeic) showStatus('Converting HEIC photo...', false);
+
     try {
-      photo = await compressImageFile(file);
+      const decodable = await normalizeToDecodableImage(file);
+      photo = await compressImageFile(decodable);
       renderPhotoTile();
       updateButtonState();
+      showStatus('', false);
     } catch (e) {
-      showStatus("⚠️ Something went wrong with that photo — mind trying another?", true);
+      showStatus("⚠️ Something went wrong with that photo — if it's a HEIC file, this browser may not support it; try converting it to JPG, or use another photo.", true);
     }
   });
 

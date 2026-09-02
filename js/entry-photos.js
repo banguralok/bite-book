@@ -97,14 +97,23 @@ document.addEventListener('bitebook:ready', async () => {
         : /\.(heic|heif|jpe?g|png|gif|webp|bmp|tiff?)$/i.test(file.name);
       if (!looksLikeImage) continue;
 
+      const isHeic = /\.(heic|heif)$/i.test(file.name) || file.type === 'image/heic' || file.type === 'image/heif';
+      if (isHeic) {
+        photoStatus.textContent = 'Converting HEIC photo...';
+        photoStatus.classList.remove('error');
+      }
+
       try {
-        const compressed = await compressImageFile(file, { maxBytes: MAX_PHOTO_BYTES });
+        const decodable = await normalizeToDecodableImage(file);
+        const compressed = await compressImageFile(decodable, { maxBytes: MAX_PHOTO_BYTES });
         const previous = photos.slice();
         photos.push(compressed);
         const ok = await saveNow();
         if (ok) {
           flashAutosaveBadge(autosaveHint, true);
           renderPhotos();
+          photoStatus.textContent = '';
+          photoStatus.classList.remove('error');
         } else {
           photos = previous;
           photoStatus.textContent = "⚠️ That didn't upload — check your connection and try again.";
