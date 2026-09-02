@@ -15,6 +15,7 @@ function buildSiteHeader() {
       <a href="quick-log.html" class="nav-quick">⚡ Quick Log</a>
       <a href="smart-entry.html" class="nav-quick">✨ Smart Entry</a>
       <a class="nav-cta" href="entry.html">New Entry</a>
+      <a href="notifications.html" class="nav-bell" id="nav-bell" title="Notifications">🔔<span class="nav-bell-badge" id="nav-bell-badge" style="display: none;"></span></a>
       <a href="profile.html" class="nav-avatar" title="${profileLabel}">${avatar}</a>
       ${signOutLink}
     </nav>
@@ -46,6 +47,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         e.preventDefault();
         signOut();
       });
+    }
+    if (typeof BiteBookStorage !== 'undefined') {
+      BiteBookStorage.countPendingNotifications().then((count) => {
+        const badge = document.getElementById('nav-bell-badge');
+        if (badge && count > 0) {
+          badge.textContent = count > 9 ? '9+' : String(count);
+          badge.style.display = 'inline-flex';
+        }
+      }).catch(() => {});
     }
   }
   if (footer) footer.innerHTML = SITE_FOOTER;

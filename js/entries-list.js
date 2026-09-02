@@ -121,6 +121,9 @@ document.addEventListener('bitebook:ready', async () => {
     }
     allEntriesCache = await BiteBookStorage.listEntries();
     renderDedupeBanner(allEntriesCache);
+    if (typeof checkForCrossUserDuplicates === 'function') {
+      checkForCrossUserDuplicates(allEntriesCache).catch(() => {});
+    }
   }
 
   function searchableText(entry) {

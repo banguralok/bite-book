@@ -347,6 +347,94 @@ const BiteBookStorage = (() => {
     return !error;
   }
 
+  // ---------- cross-user duplicate detection ----------
+
+  async function getOtherEntrySignatures() {
+    const userId = await currentUserId();
+    const { data, error } = await supabaseClient
+      .from('entry_signatures')
+      .select('id, owner_id, place_name, ate_on, coords, created_at')
+      .neq('owner_id', userId);
+    return (error || !data) ? [] : data;
+  }
+
+  async function getEntrySignature(entryId) {
+    const { data, error } = await supabaseClient
+      .from('entry_signatures')
+      .select('id, owner_id, place_name, ate_on, coords, created_at')
+      .eq('id', entryId)
+      .maybeSingle();
+    return (error || !data) ? null : data;
+  }
+
+  async function resolveDuplicateByRemovingMine(myEntryId, keepEntryId, grantShare) {
+    const { error } = await supabaseClient.rpc('resolve_duplicate_by_removing_mine', {
+      p_my_entry_id: myEntryId,
+      p_keep_entry_id: keepEntryId,
+      p_grant_share: grantShare,
+    });
+    return !error;
+  }
+
+  async function isConnectedByShare(entryIdA, entryIdB, otherOwnerId) {
+    const userId = await currentUserId();
+    const { data, error } = await supabaseClient
+      .from('shares')
+      .select('id')
+      .in('entry_id', [entryIdA, entryIdB])
+      .in('shared_with', [userId, otherOwnerId])
+      .limit(1);
+    return !error && data && data.length > 0;
+  }
+
+  async function reportPossibleDuplicate(myEntryId, otherOwnerId, otherEntryId, type, message) {
+    const { error } = await supabaseClient.rpc('report_possible_duplicate', {
+      p_my_entry_id: myEntryId,
+      p_other_owner_id: otherOwnerId,
+      p_other_entry_id: otherEntryId,
+      p_type: type,
+      p_message: message,
+    });
+    return !error;
+  }
+
+  async function getNotifications() {
+    const { data, error } = await supabaseClient
+      .from('notifications')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error || !data) return [];
+    return data.map((row) => ({
+      id: row.id,
+      type: row.type,
+      entryId: row.entry_id,
+      otherUserId: row.other_user_id,
+      otherEntryId: row.other_entry_id,
+      message: row.message,
+      status: row.status,
+      createdAt: row.created_at,
+    }));
+  }
+
+  async function countPendingNotifications() {
+    const userId = await currentUserId();
+    if (!userId) return 0;
+    const { count, error } = await supabaseClient
+      .from('notifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('status', 'pending');
+    return error ? 0 : (count || 0);
+  }
+
+  async function updateNotificationStatus(id, status) {
+    const { error } = await supabaseClient
+      .from('notifications')
+      .update({ status })
+      .eq('id', id);
+    return !error;
+  }
+
   return {
     newId,
     getCurrentUserId: currentUserId,
@@ -363,5 +451,13 @@ const BiteBookStorage = (() => {
     getShareUserIds,
     shareEntry,
     unshareEntry,
+    getOtherEntrySignatures,
+    getEntrySignature,
+    isConnectedByShare,
+    reportPossibleDuplicate,
+    resolveDuplicateByRemovingMine,
+    getNotifications,
+    countPendingNotifications,
+    updateNotificationStatus,
   };
 })();
