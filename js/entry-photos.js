@@ -89,7 +89,13 @@ document.addEventListener('bitebook:ready', async () => {
         photoStatus.classList.add('error');
         break;
       }
-      if (!file.type.startsWith('image/')) continue;
+      // Some browsers report an empty MIME type for formats like HEIC/HEIF
+      // (common for iPhone photos) — fall back to the file extension rather
+      // than silently skipping the file when file.type comes back blank.
+      const looksLikeImage = file.type
+        ? file.type.startsWith('image/')
+        : /\.(heic|heif|jpe?g|png|gif|webp|bmp|tiff?)$/i.test(file.name);
+      if (!looksLikeImage) continue;
 
       try {
         const compressed = await compressImageFile(file, { maxBytes: MAX_PHOTO_BYTES });
@@ -106,7 +112,7 @@ document.addEventListener('bitebook:ready', async () => {
           break;
         }
       } catch (e) {
-        photoStatus.textContent = '⚠️ Something went wrong with that photo — mind trying another?';
+        photoStatus.textContent = "⚠️ Something went wrong with that photo — if it's a HEIC file, this browser may not support it; try converting it to JPG, or use another photo.";
         photoStatus.classList.add('error');
       }
     }
