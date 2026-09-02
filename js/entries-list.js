@@ -55,6 +55,51 @@ function dismissDedupeGroup(key) {
   localStorage.setItem(DEDUPE_DISMISSED_KEY, JSON.stringify(Array.from(dismissed)));
 }
 
+function findOnThisDayEntries(entries) {
+  const today = new Date();
+  const matches = [];
+  entries.forEach((e) => {
+    if (e.status !== 'complete' || !e.ateOn) return;
+    const d = parseDateInputValue(e.ateOn);
+    if (d.getMonth() === today.getMonth() && d.getDate() === today.getDate() && d.getFullYear() < today.getFullYear()) {
+      matches.push({ entry: e, yearsAgo: today.getFullYear() - d.getFullYear() });
+    }
+  });
+  matches.sort((a, b) => b.yearsAgo - a.yearsAgo);
+  return matches;
+}
+
+function renderOnThisDay(entries) {
+  const container = document.getElementById('on-this-day');
+  if (!container) return;
+
+  const matches = findOnThisDayEntries(entries);
+  if (matches.length === 0) {
+    container.style.display = 'none';
+    container.innerHTML = '';
+    return;
+  }
+
+  container.style.display = 'flex';
+  container.innerHTML = matches.map(({ entry, yearsAgo }) => {
+    const photo = entry.photos && entry.photos[0];
+    const thumbHtml = photo
+      ? `<img class="on-this-day-photo" src="${photo.url}" alt="">`
+      : `<div class="on-this-day-photo-placeholder">🍽️</div>`;
+    const metaBits = [entry.placeName, ratingStarsLabel(entry.rating)].filter(Boolean).join(' · ');
+    return `
+      <a href="entry-view.html?id=${encodeURIComponent(entry.id)}" class="on-this-day-card">
+        ${thumbHtml}
+        <div class="on-this-day-info">
+          <span class="on-this-day-label">📅 ${yearsAgo} year${yearsAgo === 1 ? '' : 's'} ago today</span>
+          <strong>${escapeHtml(entry.food || 'Untitled entry')}</strong>
+          ${metaBits ? `<span class="on-this-day-meta">${escapeHtml(metaBits)}</span>` : ''}
+        </div>
+      </a>
+    `;
+  }).join('');
+}
+
 function renderDedupeBanner(entries) {
   const banner = document.getElementById('dedupe-banner');
   if (!banner) return;
@@ -120,6 +165,7 @@ document.addEventListener('bitebook:ready', async () => {
       directory.forEach((p) => directoryById.set(p.id, p.name || 'Unnamed'));
     }
     allEntriesCache = await BiteBookStorage.listEntries();
+    renderOnThisDay(allEntriesCache);
     renderDedupeBanner(allEntriesCache);
     if (typeof checkForCrossUserDuplicates === 'function') {
       checkForCrossUserDuplicates(allEntriesCache).catch(() => {});

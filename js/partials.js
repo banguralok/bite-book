@@ -13,8 +13,8 @@ function buildSiteHeader() {
     <nav class="nav-links">
       <a href="entries.html">My Entries</a>
       <a href="quick-log.html" class="nav-quick">⚡ Quick Log</a>
-      <a href="smart-entry.html" class="nav-quick">✨ Smart Entry</a>
-      <a class="nav-cta" href="entry.html">New Entry</a>
+      <a href="entry.html" class="nav-quick">📝 Full Form</a>
+      <a class="nav-cta" href="smart-entry.html">✨ New Entry</a>
       <a href="notifications.html" class="nav-bell" id="nav-bell" title="Notifications">🔔<span class="nav-bell-badge" id="nav-bell-badge" style="display: none;"></span></a>
       <a href="profile.html" class="nav-avatar" title="${profileLabel}">${avatar}</a>
       ${signOutLink}
