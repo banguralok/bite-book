@@ -1762,6 +1762,26 @@ section h2 {
 .ranking-arrow-btn:hover:not(:disabled) { background: var(--orange); color: var(--white); }
 .ranking-arrow-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
+a.ranking-row { text-decoration: none; color: inherit; transition: transform 0.15s ease; }
+a.ranking-row:hover { transform: translateY(-2px); }
+
+.trip-thumb-stack {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.trip-thumb-stack img {
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 2px solid var(--white);
+  box-shadow: var(--shadow-sm);
+  margin-left: -18px;
+}
+
+.trip-thumb-stack img:first-child { margin-left: 0; }
+
 /* ---------- ACCESSIBILITY ---------- */
 
 a:focus-visible,

@@ -42,6 +42,7 @@ const BiteBookStorage = (() => {
     ['reflection', 'reflection'],
     ['status', 'status'],
     ['aiParsed', 'ai_parsed'],
+    ['tripId', 'trip_id'],
     ['createdAt', 'created_at'],
     ['updatedAt', 'updated_at'],
   ];
@@ -435,6 +436,52 @@ const BiteBookStorage = (() => {
     return !error;
   }
 
+  // ---------- trips ----------
+
+  async function listTrips() {
+    const userId = await currentUserId();
+    if (!userId) return [];
+    const { data, error } = await supabaseClient
+      .from('trips')
+      .select('id, name, created_at')
+      .eq('owner_id', userId)
+      .order('created_at', { ascending: false });
+    return (error || !data) ? [] : data.map((row) => ({ id: row.id, name: row.name, createdAt: row.created_at }));
+  }
+
+  async function getTrip(id) {
+    const { data, error } = await supabaseClient
+      .from('trips')
+      .select('id, name, created_at')
+      .eq('id', id)
+      .maybeSingle();
+    return (error || !data) ? null : { id: data.id, name: data.name, createdAt: data.created_at };
+  }
+
+  async function createTrip(name) {
+    const userId = await currentUserId();
+    if (!userId) return null;
+    const { data, error } = await supabaseClient
+      .from('trips')
+      .insert({ id: newId(), owner_id: userId, name })
+      .select('id, name, created_at')
+      .single();
+    return (error || !data) ? null : { id: data.id, name: data.name, createdAt: data.created_at };
+  }
+
+  async function deleteTrip(id) {
+    const { error } = await supabaseClient.from('trips').delete().eq('id', id);
+    return !error;
+  }
+
+  async function assignEntryToTrip(entryId, tripId) {
+    const { error } = await supabaseClient
+      .from('entries')
+      .update({ trip_id: tripId })
+      .eq('id', entryId);
+    return !error;
+  }
+
   return {
     newId,
     getCurrentUserId: currentUserId,
@@ -459,5 +506,10 @@ const BiteBookStorage = (() => {
     getNotifications,
     countPendingNotifications,
     updateNotificationStatus,
+    listTrips,
+    getTrip,
+    createTrip,
+    deleteTrip,
+    assignEntryToTrip,
   };
 })();
