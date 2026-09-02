@@ -61,8 +61,15 @@ document.addEventListener('bitebook:ready', async () => {
   // search/filter typing re-filters locally instead of hitting Supabase
   // on every keystroke.
   let allEntriesCache = [];
+  let myId = null;
+  let directoryById = new Map();
 
   async function refreshEntriesCache() {
+    if (!myId) myId = await BiteBookStorage.getCurrentUserId();
+    if (directoryById.size === 0) {
+      const directory = await BiteBookStorage.listDirectory();
+      directory.forEach((p) => directoryById.set(p.id, p.name || 'Unnamed'));
+    }
     allEntriesCache = await BiteBookStorage.listEntries();
   }
 
@@ -135,6 +142,8 @@ document.addEventListener('bitebook:ready', async () => {
       const mediaLabel = mediaSummaryLabel(entry);
       const isComplete = entry.status === 'complete';
       const linkPage = isComplete ? 'entry-view.html' : resumePageFor(entry);
+      const isOwner = entry.ownerId === myId;
+      const sharedByLabel = isOwner ? '' : `👥 Shared by ${directoryById.get(entry.ownerId) || 'someone'}`;
 
       wrap.innerHTML = `
         <a class="entry-card-link" href="${linkPage}?id=${encodeURIComponent(entry.id)}">
@@ -153,6 +162,7 @@ document.addEventListener('bitebook:ready', async () => {
               ${mediaLabel ? `<span class="entry-tag">${escapeHtml(mediaLabel)}</span>` : ''}
               ${mealLabel ? `<span class="entry-tag">${mealLabel}</span>` : ''}
               ${cuisLabel ? `<span class="entry-tag">${cuisLabel}</span>` : ''}
+              ${sharedByLabel ? `<span class="entry-tag shared-by-badge">${escapeHtml(sharedByLabel)}</span>` : ''}
             </div>
           </div>
           <div class="entry-card-meta">
@@ -163,7 +173,7 @@ document.addEventListener('bitebook:ready', async () => {
         </a>
         <div class="entry-card-actions">
           ${isComplete ? `<button type="button" class="entry-icon-btn" title="Log this again" aria-label="Log &quot;${escapeHtml(title)}&quot; again" data-again="${escapeHtml(entry.id)}">🔁</button>` : ''}
-          <button type="button" class="entry-icon-btn" title="Delete this entry" aria-label="Delete &quot;${escapeHtml(title)}&quot;" data-id="${escapeHtml(entry.id)}">🗑️</button>
+          ${isOwner ? `<button type="button" class="entry-icon-btn" title="Delete this entry" aria-label="Delete &quot;${escapeHtml(title)}&quot;" data-id="${escapeHtml(entry.id)}">🗑️</button>` : ''}
         </div>
       `;
 

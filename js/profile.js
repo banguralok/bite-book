@@ -24,6 +24,7 @@ const BiteBookProfile = (() => {
       .single();
 
     cached = (error || !data) ? null : {
+      id: userId,
       name: data.name,
       avatar: data.avatar,
       birthday: data.birthday,

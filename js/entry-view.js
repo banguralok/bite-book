@@ -16,7 +16,19 @@ function section(icon, label, innerHtml, editHref) {
   `;
 }
 
-function buildStoryHtml(entry) {
+function buildSharePanelHtml(directory, shareUserIds) {
+  if (!directory.length) {
+    return `<p class="field-sublabel">No one in your family or friends list yet — add them from your Profile page first.</p>`;
+  }
+  const chips = directory.map((p) => {
+    const label = p.name || 'Unnamed';
+    return `<button type="button" class="chip" aria-pressed="false" data-user-id="${escapeHtmlView(p.id)}">${p.avatar ? escapeHtmlView(p.avatar) + ' ' : '👤 '}${escapeHtmlView(label)}</button>`;
+  }).join('');
+  return `<div class="chip-grid" id="share-chip-grid">${chips}</div>`;
+}
+
+function buildStoryHtml(entry, ctx) {
+  const { isOwner, directory, shareUserIds, ownerName } = ctx;
   const title = entry.food || 'Untitled entry';
   const mealLabel = mealTypeLabel(entry.mealType);
   const cuisLabel = cuisineLabel(entry.cuisine);
@@ -40,16 +52,32 @@ function buildStoryHtml(entry) {
     </div>
   `;
 
+  const sharedByHtml = !isOwner
+    ? `<p class="shared-by-note">👥 Shared by ${escapeHtmlView(ownerName || 'a family member')}</p>`
+    : '';
+
+  const sharePanelHtml = isOwner
+    ? `
+      <button type="button" class="toggle-link" id="share-toggle-link">👥 Share with...</button>
+      <div class="field-group" id="share-wrap" style="display: none; margin-top: 14px;">
+        ${buildSharePanelHtml(directory, shareUserIds)}
+        <p class="upload-status" id="share-status"></p>
+      </div>
+    `
+    : '';
+
   const actionsHtml = `
     <div class="story-actions">
-      <a href="entry.html?id=${encodeURIComponent(entry.id)}" class="btn btn-back">✏️ Edit</a>
+      ${isOwner ? `<a href="entry.html?id=${encodeURIComponent(entry.id)}" class="btn btn-back">✏️ Edit</a>` : ''}
       <button type="button" class="btn btn-back" id="log-again-btn">🔁 Log This Again</button>
       <button type="button" class="btn btn-back" id="share-btn">📤 Share</button>
     </div>
+    ${sharedByHtml}
+    ${sharePanelHtml}
   `;
 
   const sections = [];
-  const stepHref = (page) => `${page}?id=${encodeURIComponent(entry.id)}`;
+  const stepHref = (page) => (isOwner ? `${page}?id=${encodeURIComponent(entry.id)}` : null);
 
   const placeBits = [entry.placeName, entry.placeAddress].filter(Boolean).join(' — ');
   if (placeBits || entry.placeType) {
@@ -268,7 +296,13 @@ document.addEventListener('bitebook:ready', async () => {
     return;
   }
 
-  container.innerHTML = buildStoryHtml(entry);
+  const myId = BiteBookProfile.get().id;
+  const isOwner = entry.ownerId === myId;
+  const directory = await BiteBookStorage.listDirectory();
+  const shareUserIds = isOwner ? await BiteBookStorage.getShareUserIds(entry.id) : new Set();
+  const ownerName = isOwner ? null : (directory.find((p) => p.id === entry.ownerId) || {}).name;
+
+  container.innerHTML = buildStoryHtml(entry, { isOwner, directory, shareUserIds, ownerName });
 
   document.getElementById('log-again-btn').addEventListener('click', async () => {
     const newId = await BiteBookStorage.duplicateForLogAgain(entry);
@@ -280,4 +314,32 @@ document.addEventListener('bitebook:ready', async () => {
     shareEntryAsImage(entry);
     setTimeout(() => { e.target.textContent = '📤 Share'; }, 1200);
   });
+
+  const shareToggleLink = document.getElementById('share-toggle-link');
+  if (shareToggleLink) {
+    const shareWrap = document.getElementById('share-wrap');
+    shareToggleLink.addEventListener('click', () => {
+      shareWrap.style.display = shareWrap.style.display === 'none' ? 'block' : 'none';
+    });
+
+    const shareStatus = document.getElementById('share-status');
+    document.querySelectorAll('#share-chip-grid .chip').forEach((chip) => {
+      setChipSelected(chip, shareUserIds.has(chip.dataset.userId));
+      chip.addEventListener('click', async () => {
+        const userId = chip.dataset.userId;
+        const nowSelected = !chip.classList.contains('selected');
+        chip.disabled = true;
+        const ok = nowSelected
+          ? await BiteBookStorage.shareEntry(entry.id, userId)
+          : await BiteBookStorage.unshareEntry(entry.id, userId);
+        chip.disabled = false;
+        if (ok) {
+          setChipSelected(chip, nowSelected);
+          shareStatus.textContent = '';
+        } else {
+          shareStatus.textContent = '⚠️ Something went wrong — try again.';
+        }
+      });
+    });
+  }
 });

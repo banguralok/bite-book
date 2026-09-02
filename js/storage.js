@@ -152,7 +152,7 @@ const BiteBookStorage = (() => {
   // ---------- row <-> entry mapping ----------
 
   async function mapRowToEntry(row) {
-    const entry = { id: row.id };
+    const entry = { id: row.id, ownerId: row.owner_id };
     FIELD_MAP.forEach(([camel, snake]) => {
       entry[camel] = row[snake] !== undefined ? row[snake] : null;
     });
@@ -309,8 +309,47 @@ const BiteBookStorage = (() => {
     return !error;
   }
 
+  // ---------- sharing ----------
+
+  async function listDirectory() {
+    const userId = await currentUserId();
+    const { data, error } = await supabaseClient
+      .from('profile_directory')
+      .select('id, name, avatar');
+    if (error || !data) return [];
+    return data.filter((p) => p.id !== userId);
+  }
+
+  async function getShareUserIds(entryId) {
+    const { data, error } = await supabaseClient
+      .from('shares')
+      .select('shared_with')
+      .eq('entry_id', entryId);
+    if (error || !data) return new Set();
+    return new Set(data.map((row) => row.shared_with));
+  }
+
+  async function shareEntry(entryId, userId) {
+    const ownerId = await currentUserId();
+    if (!ownerId) return false;
+    const { error } = await supabaseClient
+      .from('shares')
+      .insert({ entry_id: entryId, shared_with: userId, shared_by: ownerId });
+    return !error;
+  }
+
+  async function unshareEntry(entryId, userId) {
+    const { error } = await supabaseClient
+      .from('shares')
+      .delete()
+      .eq('entry_id', entryId)
+      .eq('shared_with', userId);
+    return !error;
+  }
+
   return {
     newId,
+    getCurrentUserId: currentUserId,
     getEntry,
     saveEntry,
     deleteEntry,
@@ -320,5 +359,9 @@ const BiteBookStorage = (() => {
     duplicateForLogAgain,
     getRankingOrder,
     setRankingOrder,
+    listDirectory,
+    getShareUserIds,
+    shareEntry,
+    unshareEntry,
   };
 })();

@@ -1100,6 +1100,11 @@ section h2 {
   border-radius: 999px;
 }
 
+.shared-by-badge {
+  color: var(--white);
+  background: var(--orange);
+}
+
 .entry-card-meta {
   display: flex;
   align-items: center;
@@ -1231,6 +1236,13 @@ section h2 {
   flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 30px;
+}
+
+.shared-by-note {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--brown-soft);
+  margin: -18px 0 20px;
 }
 
 .story-section {
