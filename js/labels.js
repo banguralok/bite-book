@@ -428,7 +428,31 @@ async function normalizeToDecodableImage(file) {
     return Array.isArray(converted) ? converted[0] : converted;
   } catch (e) {
     const detail = (e && (e.message || e.code)) || 'unknown error';
+    // libheif's WASM build only decodes standard 8-bit HEVC HEIC — newer
+    // iPhones' HDR/10-bit capture mode produces a variant it can't read.
+    // No in-browser library currently covers this; it's a real format gap,
+    // not something fixable in app code.
+    if (/not supported/i.test(detail)) {
+      throw new Error(
+        "This photo's format isn't supported by any in-browser HEIC converter — likely an HDR photo from a newer iPhone. " +
+        "Convert it to JPEG on your phone first (share it out as JPEG), or in iPhone Settings go to Camera > Formats and " +
+        "switch to \"Most Compatible\" so new photos save as JPEG directly."
+      );
+    }
     throw new Error(`HEIC conversion failed: ${detail}`);
+  }
+}
+
+// Tries native <img> decode first (instant for normal formats, and some
+// browsers have partial native HEIC support too), falling back to
+// heic2any conversion only if that fails and the file is HEIC.
+async function decodePhotoForUpload(file, compressOptions) {
+  try {
+    return await compressImageFile(file, compressOptions);
+  } catch (nativeErr) {
+    if (!isHeicFile(file)) throw nativeErr;
+    const decodable = await normalizeToDecodableImage(file);
+    return compressImageFile(decodable, compressOptions);
   }
 }
 

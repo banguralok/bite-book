@@ -103,8 +103,7 @@ document.addEventListener('bitebook:ready', async () => {
       }
 
       try {
-        const decodable = await normalizeToDecodableImage(file);
-        const compressed = await compressImageFile(decodable, { maxBytes: MAX_PHOTO_BYTES });
+        const compressed = await decodePhotoForUpload(file, { maxBytes: MAX_PHOTO_BYTES });
         const previous = photos.slice();
         photos.push(compressed);
         const ok = await saveNow();

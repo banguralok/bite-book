@@ -50,8 +50,7 @@ document.addEventListener('bitebook:ready', () => {
     if (isHeicFile(file)) showStatus('Converting HEIC photo...', false);
 
     try {
-      const decodable = await normalizeToDecodableImage(file);
-      photo = await compressImageFile(decodable);
+      photo = await decodePhotoForUpload(file);
       renderPhotoTile();
       updateButtonState();
       showStatus('', false);
