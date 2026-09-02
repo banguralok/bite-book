@@ -1,4 +1,4 @@
-document.addEventListener('bitebook:ready', () => {
+document.addEventListener('bitebook:ready', async () => {
   const foodInput = document.getElementById('quick-food-name');
   const captureWhen = document.getElementById('capture-when');
   const captureWhere = document.getElementById('capture-where');
@@ -81,7 +81,7 @@ document.addEventListener('bitebook:ready', () => {
     captureWhere.textContent = "Not available on this device.";
   }
 
-  logItBtn.addEventListener('click', () => {
+  logItBtn.addEventListener('click', async () => {
     const food = foodInput.value.trim();
     if (!food) return;
 
@@ -111,7 +111,7 @@ document.addEventListener('bitebook:ready', () => {
 
     logItBtn.disabled = true;
     logItBtn.textContent = '⚡ Logging...';
-    BiteBookStorage.saveEntry(entry);
+    await BiteBookStorage.saveEntry(entry);
     savedToast.classList.add('visible');
     setTimeout(() => {
       window.location.href = 'entries.html';

@@ -1,4 +1,4 @@
-document.addEventListener('bitebook:ready', () => {
+document.addEventListener('bitebook:ready', async () => {
   const reasonChips = document.querySelectorAll('#reason-chips .chip');
   const reasonOtherWrap = document.getElementById('reason-other-wrap');
   const reasonOtherInput = document.getElementById('reason-other');
@@ -15,6 +15,7 @@ document.addEventListener('bitebook:ready', () => {
 
   let entryId = null;
   let createdAt = null;
+  let cachedEntry = null;
   let mealDate = null;
   let selectedReason = null;
 
@@ -27,7 +28,7 @@ document.addEventListener('bitebook:ready', () => {
   }
 
   function buildEntry() {
-    const existing = BiteBookStorage.getEntry(entryId) || {};
+    const existing = cachedEntry || {};
     const reason = selectedReason === 'other'
       ? reasonOtherInput.value.trim()
       : selectedReason;
@@ -42,11 +43,12 @@ document.addEventListener('bitebook:ready', () => {
     };
   }
 
-  function saveNow() {
+  async function saveNow() {
     if (!selectedReason) return;
     const entry = buildEntry();
     if (!createdAt) createdAt = entry.createdAt;
-    const ok = BiteBookStorage.saveEntry(entry);
+    cachedEntry = entry;
+    const ok = await BiteBookStorage.saveEntry(entry);
     flashAutosaveBadge(autosaveHint, ok);
   }
 
@@ -104,9 +106,10 @@ document.addEventListener('bitebook:ready', () => {
     scheduleSave();
   });
 
-  function restoreFromStorage() {
-    const existing = BiteBookStorage.getEntry(entryId);
+  async function restoreFromStorage() {
+    const existing = await BiteBookStorage.getEntry(entryId);
     if (!existing) return;
+    cachedEntry = existing;
     createdAt = existing.createdAt;
     mealDate = existing.ateOn || null;
 
@@ -145,20 +148,20 @@ document.addEventListener('bitebook:ready', () => {
   entryId = resolveEntryId();
   if (entryId) {
     backBtn.href = `entry-made.html?id=${encodeURIComponent(entryId)}`;
-    restoreFromStorage();
+    await restoreFromStorage();
   }
 
-  continueBtn.addEventListener('click', () => {
-    saveNow();
+  continueBtn.addEventListener('click', async () => {
+    await saveNow();
     savedToast.classList.add('visible');
     continueBtn.disabled = true;
     setTimeout(() => {
       window.location.href = `entry-ingredients.html?id=${encodeURIComponent(entryId)}`;
-    }, 500);
+    }, 400);
   });
 
-  document.getElementById('finish-later-btn').addEventListener('click', () => {
-    saveNow();
+  document.getElementById('finish-later-btn').addEventListener('click', async () => {
+    await saveNow();
     window.location.href = 'entries.html';
   });
 

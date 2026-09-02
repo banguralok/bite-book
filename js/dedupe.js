@@ -9,9 +9,10 @@ document.addEventListener('bitebook:ready', () => {
     return div.innerHTML;
   }
 
-  function placeNameCounts() {
+  async function placeNameCounts() {
     const counts = {};
-    BiteBookStorage.listEntries().forEach((e) => {
+    const entries = await BiteBookStorage.listEntries();
+    entries.forEach((e) => {
       if (!e.placeName) return;
       counts[e.placeName] = (counts[e.placeName] || 0) + 1;
     });
@@ -49,17 +50,18 @@ document.addEventListener('bitebook:ready', () => {
       const nameInput = card.querySelector('[data-merge-name]');
       const mergeStatus = card.querySelector('[data-merge-status]');
 
-      mergeBtn.addEventListener('click', () => {
+      mergeBtn.addEventListener('click', async () => {
         const canonicalName = nameInput.value.trim();
         if (!canonicalName) return;
         let count = 0;
-        BiteBookStorage.listEntries().forEach((e) => {
+        const entries = await BiteBookStorage.listEntries();
+        for (const e of entries) {
           if (group.names.includes(e.placeName)) {
             e.placeName = canonicalName;
-            BiteBookStorage.saveEntry(e);
+            await BiteBookStorage.saveEntry(e);
             count += 1;
           }
-        });
+        }
         mergeStatus.textContent = `✅ Merged — updated ${count} ${count === 1 ? 'entry' : 'entries'}.`;
         mergeBtn.disabled = true;
         skipBtn.disabled = true;
@@ -82,7 +84,7 @@ document.addEventListener('bitebook:ready', () => {
     statusEl.classList.remove('error');
     groupsEl.innerHTML = '';
 
-    const counts = placeNameCounts();
+    const counts = await placeNameCounts();
     const placeNames = Object.keys(counts);
 
     if (placeNames.length < 2) {

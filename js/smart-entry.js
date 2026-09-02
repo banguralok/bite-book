@@ -159,7 +159,7 @@ document.addEventListener('bitebook:ready', () => {
       });
 
       const entry = buildEntryFromResult(result, text, profile, photo);
-      BiteBookStorage.saveEntry(entry);
+      await BiteBookStorage.saveEntry(entry);
       showStatus('✨ Got it! Taking you to review...', false);
       setTimeout(() => {
         window.location.href = `entry.html?id=${encodeURIComponent(entry.id)}`;

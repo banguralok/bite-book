@@ -24,7 +24,7 @@ function buildStoryHtml(entry) {
   const heroHtml = `
     <div class="story-hero">
       ${heroPhoto
-        ? `<img class="story-hero-photo" src="${heroPhoto.dataUrl}" alt="">`
+        ? `<img class="story-hero-photo" src="${heroPhoto.url}" alt="">`
         : `<div class="story-hero-placeholder">🍽️</div>`}
       <div class="story-hero-overlay">
         <h1>${escapeHtmlView(title)}</h1>
@@ -82,7 +82,7 @@ function buildStoryHtml(entry) {
     }
     if (entry.ingredientsFile) {
       const f = entry.ingredientsFile;
-      inner += `<p><a href="${f.dataUrl}" download="${escapeHtmlView(f.name)}">${fileKindIcon(f.type)} ${escapeHtmlView(f.name)} — download</a></p>`;
+      inner += `<p><a href="${f.url}" download="${escapeHtmlView(f.name)}">${fileKindIcon(f.type)} ${escapeHtmlView(f.name)} — download</a></p>`;
     }
     sections.push(section('🥕', 'What Went Into It', inner));
   }
@@ -111,7 +111,7 @@ function buildStoryHtml(entry) {
   }
 
   if (photos.length > 1) {
-    const gallery = photos.slice(1).map((p) => `<img src="${p.dataUrl}" alt="">`).join('');
+    const gallery = photos.slice(1).map((p) => `<img src="${p.url}" alt="">`).join('');
     sections.push(section('📸', 'More Photos', `<div class="story-gallery">${gallery}</div>`));
   }
 
@@ -119,7 +119,7 @@ function buildStoryHtml(entry) {
   if (videos.length) {
     const rows = videos.map((v) => {
       if (v.kind === 'file') {
-        return `<p>🎬 <a href="${v.dataUrl}" download="${escapeHtmlView(v.name)}">${escapeHtmlView(v.name)} — download</a></p>`;
+        return `<p>🎬 <a href="${v.url}" download="${escapeHtmlView(v.name)}">${escapeHtmlView(v.name)} — download</a></p>`;
       }
       if (isSafeUrl(v.url)) {
         return `<p><a href="${escapeHtmlView(v.url)}" target="_blank" rel="noopener noreferrer">${escapeHtmlView(linkPlatformLabel(v.url))} — watch ↗</a></p>`;
@@ -220,9 +220,10 @@ function shareEntryAsImage(entry) {
 
   if (entry.photos && entry.photos[0]) {
     const img = new Image();
+    img.crossOrigin = 'anonymous';
     img.onload = () => drawPhotoAndText(img);
     img.onerror = () => drawPhotoAndText(null);
-    img.src = entry.photos[0].dataUrl;
+    img.src = entry.photos[0].url;
   } else {
     drawPhotoAndText(null);
   }
@@ -245,11 +246,11 @@ function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
   return y + lineHeight;
 }
 
-document.addEventListener('bitebook:ready', () => {
+document.addEventListener('bitebook:ready', async () => {
   const container = document.getElementById('story-content');
   const params = new URLSearchParams(window.location.search);
   const id = params.get('id');
-  const entry = id ? BiteBookStorage.getEntry(id) : null;
+  const entry = id ? await BiteBookStorage.getEntry(id) : null;
 
   if (!entry) {
     container.innerHTML = `
@@ -265,8 +266,8 @@ document.addEventListener('bitebook:ready', () => {
 
   container.innerHTML = buildStoryHtml(entry);
 
-  document.getElementById('log-again-btn').addEventListener('click', () => {
-    const newId = BiteBookStorage.duplicateForLogAgain(entry);
+  document.getElementById('log-again-btn').addEventListener('click', async () => {
+    const newId = await BiteBookStorage.duplicateForLogAgain(entry);
     window.location.href = `entry.html?id=${encodeURIComponent(newId)}`;
   });
 

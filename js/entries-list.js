@@ -35,7 +35,7 @@ function resumePageFor(entry) {
   return STEP_SEQUENCE[STEP_SEQUENCE.length - 1].page;
 }
 
-document.addEventListener('bitebook:ready', () => {
+document.addEventListener('bitebook:ready', async () => {
   const listEl = document.getElementById('entries-list');
   const emptyEl = document.getElementById('empty-state');
   const noResultsEl = document.getElementById('no-results-state');
@@ -57,6 +57,14 @@ document.addEventListener('bitebook:ready', () => {
   let pendingDelete = null;
   let smartSearchIds = null;
   let smartSearchForQuery = null;
+  // Fetched once (and refreshed only after an actual data change) so
+  // search/filter typing re-filters locally instead of hitting Supabase
+  // on every keystroke.
+  let allEntriesCache = [];
+
+  async function refreshEntriesCache() {
+    allEntriesCache = await BiteBookStorage.listEntries();
+  }
 
   function searchableText(entry) {
     return [
@@ -78,7 +86,7 @@ document.addEventListener('bitebook:ready', () => {
   }
 
   function render() {
-    const allEntries = BiteBookStorage.listEntries();
+    const allEntries = allEntriesCache;
     const query = searchInput.value.trim().toLowerCase();
     const entries = allEntries.filter((e) => matchesFilters(e, query));
 
@@ -172,10 +180,10 @@ document.addEventListener('bitebook:ready', () => {
     });
 
     listEl.querySelectorAll('[data-again]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const source = BiteBookStorage.getEntry(btn.dataset.again);
+      btn.addEventListener('click', async () => {
+        const source = await BiteBookStorage.getEntry(btn.dataset.again);
         if (!source) return;
-        const newId = BiteBookStorage.duplicateForLogAgain(source);
+        const newId = await BiteBookStorage.duplicateForLogAgain(source);
         window.location.href = `entry.html?id=${encodeURIComponent(newId)}`;
       });
     });
@@ -189,8 +197,9 @@ document.addEventListener('bitebook:ready', () => {
     undoToast.classList.add('visible');
     pendingDelete = {
       id,
-      timer: setTimeout(() => {
-        BiteBookStorage.deleteEntry(id);
+      timer: setTimeout(async () => {
+        await BiteBookStorage.deleteEntry(id);
+        allEntriesCache = allEntriesCache.filter((e) => e.id !== id);
         hiddenIds.delete(id);
         pendingDelete = null;
         undoToast.classList.remove('visible');
@@ -202,6 +211,7 @@ document.addEventListener('bitebook:ready', () => {
     if (!pendingDelete) return;
     clearTimeout(pendingDelete.timer);
     BiteBookStorage.deleteEntry(pendingDelete.id);
+    allEntriesCache = allEntriesCache.filter((e) => e.id !== pendingDelete.id);
     hiddenIds.delete(pendingDelete.id);
     pendingDelete = null;
   }
@@ -233,7 +243,7 @@ document.addEventListener('bitebook:ready', () => {
     smartSearchStatus.classList.remove('error');
 
     try {
-      const compact = BiteBookStorage.listEntries().map((e) => ({
+      const compact = allEntriesCache.map((e) => ({
         id: e.id,
         food: e.food,
         cuisine: e.cuisine,
@@ -272,8 +282,8 @@ document.addEventListener('bitebook:ready', () => {
     });
   });
 
-  exportBtn.addEventListener('click', () => {
-    const json = BiteBookStorage.exportAllAsJson();
+  exportBtn.addEventListener('click', async () => {
+    const json = await BiteBookStorage.exportAllAsJson();
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -296,15 +306,18 @@ document.addEventListener('bitebook:ready', () => {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       const ok = window.confirm(
         'Import entries from this file? New ones will be added, and any with matching IDs will be updated.'
       );
       if (!ok) return;
-      const result = BiteBookStorage.importFromJson(reader.result, 'merge');
+      importExportStatus.textContent = '⏳ Importing...';
+      importExportStatus.classList.remove('error');
+      const result = await BiteBookStorage.importFromJson(reader.result, 'merge');
       if (result.ok) {
         importExportStatus.textContent = `✅ Imported ${result.count} entr${result.count === 1 ? 'y' : 'ies'}.`;
         importExportStatus.classList.remove('error');
+        await refreshEntriesCache();
         render();
       } else {
         importExportStatus.textContent = `⚠️ ${result.error}`;
@@ -314,5 +327,6 @@ document.addEventListener('bitebook:ready', () => {
     reader.readAsText(file);
   });
 
+  await refreshEntriesCache();
   render();
 });

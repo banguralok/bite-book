@@ -1,4 +1,4 @@
-document.addEventListener('bitebook:ready', () => {
+document.addEventListener('bitebook:ready', async () => {
   const companionChips = document.querySelectorAll('#companion-chips .chip');
   const companionOtherWrap = document.getElementById('companion-other-wrap');
   const companionOtherInput = document.getElementById('companion-other');
@@ -15,6 +15,7 @@ document.addEventListener('bitebook:ready', () => {
 
   let entryId = null;
   let createdAt = null;
+  let cachedEntry = null;
   let hasInteracted = false;
   const selectedTypes = new Set();
   const selectedFamilyIds = new Set();
@@ -31,7 +32,7 @@ document.addEventListener('bitebook:ready', () => {
   }
 
   function buildEntry() {
-    const existing = BiteBookStorage.getEntry(entryId) || {};
+    const existing = cachedEntry || {};
     const now = new Date().toISOString();
     return {
       ...existing,
@@ -45,11 +46,12 @@ document.addEventListener('bitebook:ready', () => {
     };
   }
 
-  function saveNow() {
+  async function saveNow() {
     if (!hasInteracted) return;
     const entry = buildEntry();
     if (!createdAt) createdAt = entry.createdAt;
-    const ok = BiteBookStorage.saveEntry(entry);
+    cachedEntry = entry;
+    const ok = await BiteBookStorage.saveEntry(entry);
     flashAutosaveBadge(autosaveHint, ok);
   }
 
@@ -155,9 +157,10 @@ document.addEventListener('bitebook:ready', () => {
     scheduleSave();
   });
 
-  function restoreFromStorage() {
-    const existing = BiteBookStorage.getEntry(entryId);
+  async function restoreFromStorage() {
+    const existing = await BiteBookStorage.getEntry(entryId);
     if (!existing) return;
+    cachedEntry = existing;
     createdAt = existing.createdAt;
 
     const types = existing.companionTypes || (existing.companionType ? [existing.companionType] : []);
@@ -192,20 +195,20 @@ document.addEventListener('bitebook:ready', () => {
   entryId = resolveEntryId();
   if (entryId) {
     backBtn.href = `entry-where.html?id=${encodeURIComponent(entryId)}`;
-    restoreFromStorage();
+    await restoreFromStorage();
   }
 
-  continueBtn.addEventListener('click', () => {
-    saveNow();
+  continueBtn.addEventListener('click', async () => {
+    await saveNow();
     savedToast.classList.add('visible');
     continueBtn.disabled = true;
     setTimeout(() => {
       window.location.href = `entry-made.html?id=${encodeURIComponent(entryId)}`;
-    }, 500);
+    }, 400);
   });
 
-  document.getElementById('finish-later-btn').addEventListener('click', () => {
-    saveNow();
+  document.getElementById('finish-later-btn').addEventListener('click', async () => {
+    await saveNow();
     window.location.href = 'entries.html';
   });
 

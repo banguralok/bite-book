@@ -4,16 +4,17 @@ function escapeHtmlRank(str) {
   return div.innerHTML;
 }
 
-document.addEventListener('bitebook:ready', () => {
+document.addEventListener('bitebook:ready', async () => {
   const listEl = document.getElementById('ranking-list');
   const emptyEl = document.getElementById('ranking-empty');
 
-  function getOrderedEntries() {
-    const complete = BiteBookStorage.listEntries().filter((e) => e.status === 'complete');
+  async function getOrderedEntries() {
+    const allEntries = await BiteBookStorage.listEntries();
+    const complete = allEntries.filter((e) => e.status === 'complete');
     const byId = {};
     complete.forEach((e) => { byId[e.id] = e; });
 
-    const savedOrder = BiteBookStorage.getRankingOrder().filter((id) => byId[id]);
+    const savedOrder = (await BiteBookStorage.getRankingOrder()).filter((id) => byId[id]);
     const ordered = savedOrder.map((id) => byId[id]);
     const remaining = complete.filter((e) => !savedOrder.includes(e.id));
     remaining.sort((a, b) => (b.rating || 0) - (a.rating || 0));
@@ -21,8 +22,8 @@ document.addEventListener('bitebook:ready', () => {
     return ordered.concat(remaining);
   }
 
-  function render() {
-    const ordered = getOrderedEntries();
+  async function render() {
+    const ordered = await getOrderedEntries();
 
     if (ordered.length === 0) {
       listEl.style.display = 'none';
@@ -39,7 +40,7 @@ document.addEventListener('bitebook:ready', () => {
       row.className = 'ranking-row';
       const photo = entry.photos && entry.photos[0];
       const thumbHtml = photo
-        ? `<img class="ranking-thumb" src="${photo.dataUrl}" alt="">`
+        ? `<img class="ranking-thumb" src="${photo.url}" alt="">`
         : `<div class="ranking-thumb-placeholder">🍽️</div>`;
 
       row.innerHTML = `
@@ -58,13 +59,13 @@ document.addEventListener('bitebook:ready', () => {
     });
 
     listEl.querySelectorAll('.ranking-arrow-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         const index = Number(btn.dataset.index);
         const dir = btn.dataset.dir;
         const swapWith = dir === 'up' ? index - 1 : index + 1;
         const ids = ordered.map((e) => e.id);
         [ids[index], ids[swapWith]] = [ids[swapWith], ids[index]];
-        BiteBookStorage.setRankingOrder(ids);
+        await BiteBookStorage.setRankingOrder(ids);
         render();
       });
     });

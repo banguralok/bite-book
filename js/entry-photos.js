@@ -1,4 +1,4 @@
-document.addEventListener('bitebook:ready', () => {
+document.addEventListener('bitebook:ready', async () => {
   const photoGrid = document.getElementById('photo-grid');
   const photoAddTile = document.getElementById('photo-add-tile');
   const photoInput = document.getElementById('photo-input');
@@ -21,11 +21,12 @@ document.addEventListener('bitebook:ready', () => {
 
   let entryId = null;
   let createdAt = null;
+  let cachedEntry = null;
   let photos = [];
   let videos = [];
 
   function buildEntry(extra) {
-    const existing = BiteBookStorage.getEntry(entryId) || {};
+    const existing = cachedEntry || {};
     const now = new Date().toISOString();
     return {
       ...existing,
@@ -38,9 +39,10 @@ document.addEventListener('bitebook:ready', () => {
     };
   }
 
-  function saveNow(extra) {
+  async function saveNow(extra) {
     const entry = buildEntry(extra);
     if (!createdAt) createdAt = entry.createdAt;
+    cachedEntry = entry;
     return BiteBookStorage.saveEntry(entry);
   }
 
@@ -56,16 +58,16 @@ document.addEventListener('bitebook:ready', () => {
       const tile = document.createElement('div');
       tile.className = 'photo-tile';
       tile.innerHTML = `
-        <img src="${photo.dataUrl}" alt="">
+        <img src="${photo.url || photo.dataUrl}" alt="">
         <button type="button" class="photo-tile-remove" data-index="${index}" aria-label="Remove this photo">✕</button>
       `;
       photoGrid.insertBefore(tile, photoAddTile);
     });
     photoGrid.querySelectorAll('.photo-tile-remove').forEach((btn) => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         photos.splice(Number(btn.dataset.index), 1);
         renderPhotos();
-        saveNow();
+        await saveNow();
       });
     });
     photoAddTile.style.display = photos.length >= MAX_PHOTOS ? 'none' : 'flex';
@@ -93,13 +95,13 @@ document.addEventListener('bitebook:ready', () => {
         const compressed = await compressImageFile(file, { maxBytes: MAX_PHOTO_BYTES });
         const previous = photos.slice();
         photos.push(compressed);
-        const ok = saveNow();
+        const ok = await saveNow();
         if (ok) {
           flashAutosaveBadge(autosaveHint, true);
           renderPhotos();
         } else {
           photos = previous;
-          photoStatus.textContent = "⚠️ That didn't fit in your browser's storage — try removing another photo first.";
+          photoStatus.textContent = "⚠️ That didn't upload — check your connection and try again.";
           photoStatus.classList.add('error');
           break;
         }
@@ -125,10 +127,10 @@ document.addEventListener('bitebook:ready', () => {
       videoList.appendChild(row);
     });
     videoList.querySelectorAll('.video-row-remove').forEach((btn) => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         videos.splice(Number(btn.dataset.index), 1);
         renderVideos();
-        saveNow();
+        await saveNow();
       });
     });
     const atMax = videos.length >= MAX_VIDEOS;
@@ -158,16 +160,16 @@ document.addEventListener('bitebook:ready', () => {
     }
 
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       const previous = videos.slice();
       videos.push({ kind: 'file', name: file.name, type: file.type, size: file.size, dataUrl: reader.result });
-      const ok = saveNow();
+      const ok = await saveNow();
       if (ok) {
         flashAutosaveBadge(autosaveHint, true);
         renderVideos();
       } else {
         videos = previous;
-        videoStatus.textContent = "⚠️ That didn't fit in your browser's storage — try a link instead.";
+        videoStatus.textContent = "⚠️ That didn't upload — try a link instead.";
         videoStatus.classList.add('error');
       }
     };
@@ -178,7 +180,7 @@ document.addEventListener('bitebook:ready', () => {
     reader.readAsDataURL(file);
   });
 
-  function addVideoLink() {
+  async function addVideoLink() {
     let url = videoLinkInput.value.trim();
     if (!url) return;
     if (videos.length >= MAX_VIDEOS) {
@@ -197,8 +199,8 @@ document.addEventListener('bitebook:ready', () => {
     videoStatus.textContent = '';
     videoStatus.classList.remove('error');
     renderVideos();
-    saveNow();
-    flashAutosaveBadge(autosaveHint, true);
+    const ok = await saveNow();
+    flashAutosaveBadge(autosaveHint, ok);
   }
 
   videoLinkAddBtn.addEventListener('click', () => addVideoLink());
@@ -209,9 +211,10 @@ document.addEventListener('bitebook:ready', () => {
     }
   });
 
-  function restoreFromStorage() {
-    const existing = BiteBookStorage.getEntry(entryId);
+  async function restoreFromStorage() {
+    const existing = await BiteBookStorage.getEntry(entryId);
     if (existing) {
+      cachedEntry = existing;
       createdAt = existing.createdAt;
       photos = existing.photos || [];
       videos = existing.videos || [];
@@ -233,15 +236,15 @@ document.addEventListener('bitebook:ready', () => {
   entryId = resolveEntryId();
   if (entryId) {
     backBtn.href = `entry-loved.html?id=${encodeURIComponent(entryId)}`;
-    restoreFromStorage();
+    await restoreFromStorage();
   }
 
-  continueBtn.addEventListener('click', () => {
-    saveNow({ status: 'complete' });
+  continueBtn.addEventListener('click', async () => {
+    await saveNow({ status: 'complete' });
     savedToast.classList.add('visible');
     continueBtn.disabled = true;
     setTimeout(() => {
       window.location.href = 'entries.html';
-    }, 900);
+    }, 700);
   });
 });

@@ -1,64 +1,216 @@
+// Supabase-backed. See supabase/schema.sql for the entries table shape
+// and supabase/migrations/002_ranking_and_photos.sql for the photos
+// Storage bucket. RLS on `entries` already scopes every query to
+// "your own rows, or rows explicitly shared with you" — no client-side
+// filtering by owner needed here.
 const BiteBookStorage = (() => {
-  const STORAGE_KEY = 'biteBookEntries';
-  const RANKING_KEY = 'biteBookRankingOrder';
+  const PHOTOS_BUCKET = 'photos';
 
-  function readAll() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) {
-      return {};
-    }
-  }
-
-  function writeAll(entries) {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
+  // camelCase (JS) <-> snake_case (Postgres) — id/createdAt/updatedAt and
+  // the media fields (photos/videos/ingredientsFile) are handled separately
+  // below since they need more than a name change.
+  const FIELD_MAP = [
+    ['food', 'food'],
+    ['mealType', 'meal_type'],
+    ['mealTypeAutoPicked', 'meal_type_auto_picked'],
+    ['cuisine', 'cuisine'],
+    ['ateOn', 'ate_on'],
+    ['timeMode', 'time_mode'],
+    ['timeOfDay', 'time_of_day'],
+    ['timeAutoPicked', 'time_auto_picked'],
+    ['exactTime', 'exact_time'],
+    ['placeName', 'place_name'],
+    ['placeAddress', 'place_address'],
+    ['placeType', 'place_type'],
+    ['placeSource', 'place_source'],
+    ['coords', 'coords'],
+    ['companionTypes', 'companion_types'],
+    ['companionFamilyIds', 'companion_family_ids'],
+    ['companionNames', 'companion_names'],
+    ['madeBy', 'made_by'],
+    ['madeByName', 'made_by_name'],
+    ['reason', 'reason'],
+    ['occasionDate', 'occasion_date'],
+    ['ingredientsText', 'ingredients_text'],
+    ['ingredientsLink', 'ingredients_link'],
+    ['likedQualities', 'liked_qualities'],
+    ['likedOther', 'liked_other'],
+    ['rating', 'rating'],
+    ['wouldEatAgain', 'would_eat_again'],
+    ['eatAgainFrequency', 'eat_again_frequency'],
+    ['personalRank', 'personal_rank'],
+    ['reflection', 'reflection'],
+    ['status', 'status'],
+    ['aiParsed', 'ai_parsed'],
+    ['createdAt', 'created_at'],
+    ['updatedAt', 'updated_at'],
+  ];
 
   function newId() {
-    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
-    return 'e-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+    return crypto.randomUUID();
   }
 
-  function getEntry(id) {
-    const entries = readAll();
-    return entries[id] || null;
+  async function currentUserId() {
+    const { data } = await supabaseClient.auth.getSession();
+    return data.session ? data.session.user.id : null;
   }
 
-  function saveEntry(entry) {
-    const entries = readAll();
-    entries[entry.id] = entry;
-    return writeAll(entries);
+  // ---------- media: upload (save) and signed-url resolution (fetch) ----------
+
+  function dataUrlToBlob(dataUrl) {
+    const [header, base64] = dataUrl.split(',');
+    const mimeMatch = /data:(.*?);base64/.exec(header);
+    const mimeType = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new Blob([bytes], { type: mimeType });
   }
 
-  function deleteEntry(id) {
-    const entries = readAll();
-    delete entries[id];
-    writeAll(entries);
+  async function uploadMedia(entryId, dataUrl, filename) {
+    const userId = await currentUserId();
+    const blob = dataUrlToBlob(dataUrl);
+    const path = `${userId}/${entryId}/${newId()}-${filename}`;
+    const { error } = await supabaseClient.storage
+      .from(PHOTOS_BUCKET)
+      .upload(path, blob, { contentType: blob.type, upsert: false });
+    if (error) throw error;
+    return path;
   }
 
-  function listEntries() {
-    const entries = readAll();
-    return Object.values(entries).sort(
-      (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
-    );
+  async function resolveSignedUrl(path) {
+    if (!path) return null;
+    const { data, error } = await supabaseClient.storage
+      .from(PHOTOS_BUCKET)
+      .createSignedUrl(path, 3600);
+    return error ? null : data.signedUrl;
   }
 
-  function exportAllAsJson() {
-    let profile = null;
-    try {
-      const raw = localStorage.getItem('biteBookProfile');
-      profile = raw ? JSON.parse(raw) : null;
-    } catch (e) {
-      profile = null;
+  async function preparePhotosForSave(entryId, photos) {
+    const results = [];
+    for (const photo of photos || []) {
+      if (photo.path) {
+        results.push({ path: photo.path, width: photo.width, height: photo.height, size: photo.size });
+      } else if (photo.dataUrl) {
+        const path = await uploadMedia(entryId, photo.dataUrl, 'photo.jpg');
+        results.push({ path, width: photo.width, height: photo.height, size: photo.size });
+      }
     }
+    return results;
+  }
+
+  async function prepareVideosForSave(entryId, videos) {
+    const results = [];
+    for (const video of videos || []) {
+      if (video.kind === 'link') {
+        results.push(video);
+      } else if (video.path) {
+        results.push({ kind: 'file', name: video.name, type: video.type, size: video.size, path: video.path });
+      } else if (video.dataUrl) {
+        const path = await uploadMedia(entryId, video.dataUrl, video.name || 'video');
+        results.push({ kind: 'file', name: video.name, type: video.type, size: video.size, path });
+      }
+    }
+    return results;
+  }
+
+  async function prepareIngredientsFileForSave(entryId, file) {
+    if (!file) return null;
+    if (file.path) return { name: file.name, type: file.type, size: file.size, path: file.path };
+    if (file.dataUrl) {
+      const path = await uploadMedia(entryId, file.dataUrl, file.name || 'file');
+      return { name: file.name, type: file.type, size: file.size, path };
+    }
+    return null;
+  }
+
+  async function resolvePhotosForDisplay(photos) {
+    const results = [];
+    for (const photo of photos || []) {
+      results.push({ ...photo, url: await resolveSignedUrl(photo.path) });
+    }
+    return results;
+  }
+
+  async function resolveVideosForDisplay(videos) {
+    const results = [];
+    for (const video of videos || []) {
+      if (video.kind === 'link') {
+        results.push(video);
+      } else {
+        results.push({ ...video, url: await resolveSignedUrl(video.path) });
+      }
+    }
+    return results;
+  }
+
+  async function resolveIngredientsFileForDisplay(file) {
+    if (!file) return null;
+    return { ...file, url: await resolveSignedUrl(file.path) };
+  }
+
+  // ---------- row <-> entry mapping ----------
+
+  async function mapRowToEntry(row) {
+    const entry = { id: row.id };
+    FIELD_MAP.forEach(([camel, snake]) => {
+      entry[camel] = row[snake] !== undefined ? row[snake] : null;
+    });
+    entry.photos = await resolvePhotosForDisplay(row.photos);
+    entry.videos = await resolveVideosForDisplay(row.videos);
+    entry.ingredientsFile = await resolveIngredientsFileForDisplay(row.ingredients_file);
+    return entry;
+  }
+
+  async function mapEntryToRow(entry, ownerId) {
+    const row = { id: entry.id, owner_id: ownerId };
+    FIELD_MAP.forEach(([camel, snake]) => {
+      if (entry[camel] !== undefined) row[snake] = entry[camel];
+    });
+    row.photos = await preparePhotosForSave(entry.id, entry.photos || []);
+    row.videos = await prepareVideosForSave(entry.id, entry.videos || []);
+    row.ingredients_file = await prepareIngredientsFileForSave(entry.id, entry.ingredientsFile);
+    return row;
+  }
+
+  // ---------- CRUD ----------
+
+  async function getEntry(id) {
+    const { data, error } = await supabaseClient.from('entries').select('*').eq('id', id).single();
+    if (error || !data) return null;
+    return mapRowToEntry(data);
+  }
+
+  async function saveEntry(entry) {
+    const ownerId = await currentUserId();
+    if (!ownerId) return false;
+    const row = await mapEntryToRow(entry, ownerId);
+    const { error } = await supabaseClient.from('entries').upsert(row);
+    return !error;
+  }
+
+  async function deleteEntry(id) {
+    await supabaseClient.from('entries').delete().eq('id', id);
+  }
+
+  async function listEntries() {
+    const { data, error } = await supabaseClient
+      .from('entries')
+      .select('*')
+      .order('updated_at', { ascending: false });
+    if (error || !data) return [];
+    return Promise.all(data.map(mapRowToEntry));
+  }
+
+  // ---------- export / import ----------
+
+  async function exportAllAsJson() {
+    const entries = await listEntries();
+    const entriesById = {};
+    entries.forEach((e) => { entriesById[e.id] = e; });
+    const profile = (typeof BiteBookProfile !== 'undefined') ? BiteBookProfile.get() : null;
     return JSON.stringify(
-      { exportedAt: new Date().toISOString(), entries: readAll(), profile },
+      { exportedAt: new Date().toISOString(), entries: entriesById, profile },
       null,
       2
     );
@@ -80,7 +232,7 @@ const BiteBookStorage = (() => {
     return entry;
   }
 
-  function importFromJson(jsonString, mode) {
+  async function importFromJson(jsonString, mode) {
     let parsed;
     try {
       parsed = JSON.parse(jsonString);
@@ -91,24 +243,34 @@ const BiteBookStorage = (() => {
     if (!incoming || typeof incoming !== 'object') {
       return { ok: false, error: 'That file isn\'t valid — it doesn\'t look like a Bite Book export.' };
     }
-    Object.values(incoming).forEach(sanitizeIncomingEntry);
-    const current = mode === 'replace' ? {} : readAll();
-    const merged = { ...current, ...incoming };
-    const success = writeAll(merged);
-    if (!success) {
-      return { ok: false, error: "That didn't fit in your browser's storage." };
+
+    const ownerId = await currentUserId();
+    if (!ownerId) return { ok: false, error: 'You need to be signed in to import.' };
+
+    if (mode === 'replace') {
+      await supabaseClient.from('entries').delete().eq('owner_id', ownerId);
     }
-    if (parsed.profile && typeof parsed.profile === 'object') {
+
+    const entries = Object.values(incoming).map(sanitizeIncomingEntry);
+    let successCount = 0;
+    for (const entry of entries) {
+      const row = await mapEntryToRow(entry, ownerId);
+      const { error } = await supabaseClient.from('entries').upsert(row);
+      if (!error) successCount += 1;
+    }
+
+    if (parsed.profile && typeof parsed.profile === 'object' && typeof BiteBookProfile !== 'undefined') {
       try {
-        localStorage.setItem('biteBookProfile', JSON.stringify(parsed.profile));
+        await BiteBookProfile.save(parsed.profile);
       } catch (e) {
         // profile import is best-effort; entries already saved successfully
       }
     }
-    return { ok: true, count: Object.keys(incoming).length };
+
+    return { ok: true, count: successCount };
   }
 
-  function duplicateForLogAgain(source) {
+  async function duplicateForLogAgain(source) {
     const carriedFields = [
       'food', 'mealType', 'mealTypeAutoPicked', 'cuisine',
       'placeName', 'placeAddress', 'placeType', 'placeSource', 'coords',
@@ -120,26 +282,31 @@ const BiteBookStorage = (() => {
     carriedFields.forEach((key) => {
       if (source[key] !== undefined) fresh[key] = source[key];
     });
-    saveEntry(fresh);
+    await saveEntry(fresh);
     return fresh.id;
   }
 
-  function getRankingOrder() {
-    try {
-      const raw = localStorage.getItem(RANKING_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) {
-      return [];
-    }
+  // ---------- ranking order ----------
+
+  async function getRankingOrder() {
+    const userId = await currentUserId();
+    if (!userId) return [];
+    const { data, error } = await supabaseClient
+      .from('profiles')
+      .select('ranking_order')
+      .eq('id', userId)
+      .single();
+    return (error || !data) ? [] : (data.ranking_order || []);
   }
 
-  function setRankingOrder(orderedIds) {
-    try {
-      localStorage.setItem(RANKING_KEY, JSON.stringify(orderedIds));
-      return true;
-    } catch (e) {
-      return false;
-    }
+  async function setRankingOrder(orderedIds) {
+    const userId = await currentUserId();
+    if (!userId) return false;
+    const { error } = await supabaseClient
+      .from('profiles')
+      .update({ ranking_order: orderedIds })
+      .eq('id', userId);
+    return !error;
   }
 
   return {
