@@ -49,12 +49,27 @@
       <input type="file" id="smart-entry-photo-input" accept="image/*" style="display: none;">
     </div>
 
+    <div class="geo-row">
+      <button type="button" class="btn-geo" id="smart-entry-geo-btn">📍 Tag My Location</button>
+      <span class="geo-status" id="smart-entry-geo-status"></span>
+    </div>
+
     <p class="upload-status" id="smart-entry-status"></p>
 
-    <div class="wizard-actions" style="border-top: none; padding-top: 8px;">
+    <div class="wizard-actions" style="border-top: none; padding-top: 8px;" id="smart-entry-actions">
       <a href="entry.html" class="wizard-link-start">📝 Use the Full Form Instead</a>
       <div class="wizard-actions-right">
         <button type="button" class="btn btn-primary btn-large" id="smart-entry-btn" disabled>✨ Fill It In For Me</button>
+      </div>
+    </div>
+
+    <div id="smart-entry-confirm" style="display: none;">
+      <div class="scrapbook-card" id="smart-entry-confirm-card" style="max-width: none; transform: none;"></div>
+      <div class="wizard-actions" style="border-top: none; padding-top: 18px;">
+        <button type="button" class="wizard-link-start" id="smart-entry-edit-btn" style="background: none; border: none; cursor: pointer; padding: 0; font-family: inherit;">✏️ Let Me Fine-Tune This</button>
+        <div class="wizard-actions-right">
+          <button type="button" class="btn btn-primary btn-large" id="smart-entry-confirm-btn">✅ Looks Good — Save</button>
+        </div>
       </div>
     </div>
   </div>
@@ -70,6 +85,7 @@
 <script src="js/storage.js?v=2"></script>
 <script src="js/labels.js?v=2"></script>
 <script src="js/profile.js?v=2"></script>
+<script src="js/geo.js?v=2"></script>
 <script src="js/ai.js?v=2"></script>
 <script src="js/smart-entry.js"></script>
 </body>

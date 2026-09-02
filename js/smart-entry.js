@@ -1,3 +1,9 @@
+function escapeHtmlSmart(str) {
+  const div = document.createElement('div');
+  div.textContent = str || '';
+  return div.innerHTML;
+}
+
 document.addEventListener('bitebook:ready', () => {
   const textInput = document.getElementById('smart-entry-text');
   const submitBtn = document.getElementById('smart-entry-btn');
@@ -5,8 +11,75 @@ document.addEventListener('bitebook:ready', () => {
   const photoGrid = document.getElementById('smart-entry-photo-grid');
   const photoAddTile = document.getElementById('smart-entry-photo-add');
   const photoInput = document.getElementById('smart-entry-photo-input');
+  const geoBtn = document.getElementById('smart-entry-geo-btn');
+  const geoStatus = document.getElementById('smart-entry-geo-status');
+  const actionsRow = document.getElementById('smart-entry-actions');
+  const confirmWrap = document.getElementById('smart-entry-confirm');
+  const confirmCard = document.getElementById('smart-entry-confirm-card');
+  const confirmBtn = document.getElementById('smart-entry-confirm-btn');
+  const editBtn = document.getElementById('smart-entry-edit-btn');
 
   let photo = null;
+  let capturedPlace = null; // {name, address, coords, placeType, cuisine} from "Tag My Location"
+  let pendingEntry = null;
+
+  function geoErrorMessage(err) {
+    if (err && err.code === 1) return "Location access denied — just mention the place in your description.";
+    if (err && err.code === 3) return "That took too long — just mention the place in your description.";
+    return "Couldn't get your location — just mention the place in your description.";
+  }
+
+  geoBtn.addEventListener('click', () => {
+    if (!navigator.geolocation) {
+      geoStatus.textContent = "Geolocation isn't available here.";
+      return;
+    }
+    geoBtn.disabled = true;
+    geoBtn.textContent = '📍 Locating...';
+    geoStatus.textContent = '';
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        const coords = { lat, lon };
+        try {
+          const data = await reverseGeocodeLookup(lat, lon);
+          const context = inferPlaceContext(data, coords);
+          const profile = (typeof BiteBookProfile !== 'undefined') ? BiteBookProfile.get() : null;
+
+          if (context.isHome) {
+            capturedPlace = {
+              name: (profile && profile.homeAddress) ? 'Home' : (placeNameFromGeocode(data) || 'Home'),
+              address: (profile && profile.homeAddress) || shortAddressFromGeocode(data),
+              coords, placeType: 'home', cuisine: null,
+            };
+            geoStatus.textContent = '📍 Looks like home.';
+          } else {
+            capturedPlace = {
+              name: placeNameFromGeocode(data),
+              address: shortAddressFromGeocode(data),
+              coords,
+              placeType: context.placeType || null,
+              cuisine: context.cuisine || null,
+            };
+            geoStatus.textContent = capturedPlace.name ? `📍 Tagged: ${capturedPlace.name}` : '📍 Location tagged.';
+          }
+        } catch (e) {
+          capturedPlace = { name: null, address: `${lat.toFixed(5)}, ${lon.toFixed(5)}`, coords, placeType: null, cuisine: null };
+          geoStatus.textContent = "📍 Got your coordinates, but couldn't look up the address.";
+        }
+        geoBtn.disabled = false;
+        geoBtn.textContent = '📍 Tag My Location';
+      },
+      (err) => {
+        geoStatus.textContent = geoErrorMessage(err);
+        geoBtn.disabled = false;
+        geoBtn.textContent = '📍 Tag My Location';
+      },
+      { timeout: 10000, maximumAge: 60000 }
+    );
+  });
 
   function updateButtonState() {
     submitBtn.disabled = !textInput.value.trim() && !photo;
@@ -106,6 +179,12 @@ document.addEventListener('bitebook:ready', () => {
     const timeOfDayFromAi = result.timeOfDay || null;
     const ateOnFromAi = isValidDateStr(result.ateOn) ? result.ateOn : null;
 
+    // What the user actually described takes priority; GPS is only a
+    // fallback for whatever the description didn't cover.
+    const placeName = result.placeName || (capturedPlace && capturedPlace.name) || null;
+    const placeType = resolveOrOther(result.placeType, result.placeTypeOther) || (capturedPlace && capturedPlace.placeType) || null;
+    const cuisine = resolveOrOther(result.cuisine, result.cuisineOther) || (capturedPlace && capturedPlace.cuisine) || null;
+
     const now = new Date().toISOString();
     const id = BiteBookStorage.newId();
 
@@ -114,14 +193,16 @@ document.addEventListener('bitebook:ready', () => {
       food: (result.food && result.food.trim()) || rawText.trim(),
       mealType: mealTypeFromAi || guessMealTypeFromTime(),
       mealTypeAutoPicked: !mealTypeFromAi,
-      cuisine: resolveOrOther(result.cuisine, result.cuisineOther),
+      cuisine,
       ateOn: ateOnFromAi || toDateInputValue(new Date()),
       timeMode: 'fuzzy',
       timeOfDay: timeOfDayFromAi || guessTimeOfDayFromTime(),
       timeAutoPicked: !timeOfDayFromAi,
-      placeName: result.placeName || null,
-      placeType: resolveOrOther(result.placeType, result.placeTypeOther),
-      placeSource: 'ai',
+      placeName,
+      placeType,
+      placeAddress: (!result.placeName && capturedPlace) ? capturedPlace.address : null,
+      placeSource: result.placeName ? 'ai' : (capturedPlace ? 'geolocation' : null),
+      coords: (capturedPlace && capturedPlace.coords) || null,
       companionTypes,
       companionFamilyIds: mentionedFamilyIds,
       companionNames: result.companionNames || null,
@@ -141,6 +222,28 @@ document.addEventListener('bitebook:ready', () => {
       createdAt: now,
       updatedAt: now,
     };
+  }
+
+  function buildConfirmCardHtml(entry) {
+    const bits = [];
+    if (entry.placeName) bits.push(`📍 ${escapeHtmlSmart(entry.placeName)}`);
+    if (entry.ateOn) bits.push(`🕰️ ${escapeHtmlSmart(formatDateLabel(entry.ateOn))}`);
+    const companionText = companionSummaryLabel(entry);
+    if (companionText) bits.push(`👥 ${escapeHtmlSmart(companionText)}`);
+    if (entry.rating) bits.push(ratingStarsLabel(entry.rating));
+
+    return `
+      <h3>${escapeHtmlSmart(entry.food || 'Untitled entry')}</h3>
+      ${bits.length ? `<p style="margin-top: 8px;">${bits.join(' &nbsp;·&nbsp; ')}</p>` : ''}
+      ${entry.reflection ? `<p class="scrapbook-quote" style="margin-top: 14px;">"${escapeHtmlSmart(entry.reflection)}"</p>` : ''}
+    `;
+  }
+
+  function showConfirmation(entry) {
+    pendingEntry = entry;
+    confirmCard.innerHTML = buildConfirmCardHtml(entry);
+    actionsRow.style.display = 'none';
+    confirmWrap.style.display = 'block';
   }
 
   submitBtn.addEventListener('click', async () => {
@@ -165,15 +268,28 @@ document.addEventListener('bitebook:ready', () => {
 
       const entry = buildEntryFromResult(result, text, profile, photo);
       await BiteBookStorage.saveEntry(entry);
-      showStatus('✨ Got it! Taking you to review...', false);
-      setTimeout(() => {
-        window.location.href = `entry.html?id=${encodeURIComponent(entry.id)}`;
-      }, 600);
+      showStatus('', false);
+      showConfirmation(entry);
     } catch (err) {
       showStatus(BiteBookAI.friendlyErrorMessage(err), true);
+    } finally {
       submitBtn.disabled = false;
       submitBtn.textContent = '✨ Fill It In For Me';
     }
+  });
+
+  confirmBtn.addEventListener('click', async () => {
+    if (!pendingEntry) return;
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Saving...';
+    const finished = { ...pendingEntry, status: 'complete', updatedAt: new Date().toISOString() };
+    await BiteBookStorage.saveEntry(finished);
+    window.location.href = `entry-view.html?id=${encodeURIComponent(pendingEntry.id)}`;
+  });
+
+  editBtn.addEventListener('click', () => {
+    if (!pendingEntry) return;
+    window.location.href = `entry.html?id=${encodeURIComponent(pendingEntry.id)}`;
   });
 
   textInput.addEventListener('keydown', (e) => {
