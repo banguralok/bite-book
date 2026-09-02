@@ -13,11 +13,6 @@ document.addEventListener('bitebook:ready', () => {
   const setPasswordBtn = document.getElementById('set-password-btn');
   const passwordStatus = document.getElementById('password-status');
 
-  const geminiKeyInput = document.getElementById('gemini-api-key');
-  const saveKeyBtn = document.getElementById('save-key-btn');
-  const removeKeyBtn = document.getElementById('remove-key-btn');
-  const keyStatus = document.getElementById('key-status');
-
   const familyListEl = document.getElementById('family-list');
   const addFamilyBtn = document.getElementById('add-family-btn');
   const familyForm = document.getElementById('family-form');
@@ -191,38 +186,6 @@ document.addEventListener('bitebook:ready', () => {
     familyForm.style.display = 'none';
     addFamilyBtn.style.display = 'inline-flex';
   });
-
-  // ---------- AI Assistant (Gemini API key) ----------
-
-  function refreshKeyStatus() {
-    const settings = BiteBookSettings.get();
-    if (settings && settings.geminiApiKey) {
-      keyStatus.textContent = '🔑 A key is saved — paste a new one below to replace it.';
-      keyStatus.classList.remove('error');
-      removeKeyBtn.style.display = 'inline-block';
-    } else {
-      keyStatus.textContent = '';
-      removeKeyBtn.style.display = 'none';
-    }
-  }
-
-  saveKeyBtn.addEventListener('click', () => {
-    const key = geminiKeyInput.value.trim();
-    if (!key) return;
-    BiteBookSettings.save({ ...BiteBookSettings.get(), geminiApiKey: key });
-    geminiKeyInput.value = '';
-    refreshKeyStatus();
-    keyStatus.textContent = '✅ Key saved.';
-  });
-
-  removeKeyBtn.addEventListener('click', () => {
-    const settings = BiteBookSettings.get();
-    delete settings.geminiApiKey;
-    BiteBookSettings.save(settings);
-    refreshKeyStatus();
-  });
-
-  refreshKeyStatus();
 
   // ---------- Load / Save ----------
 

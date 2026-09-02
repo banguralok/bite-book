@@ -1,6 +1,4 @@
 const BiteBookAI = (() => {
-  const GEMINI_MODEL = 'gemini-3.6-flash';
-
   const ENTRY_EXTRACTION_SCHEMA = {
     type: 'OBJECT',
     properties: {
@@ -60,47 +58,39 @@ const BiteBookAI = (() => {
     ].join('\n');
   }
 
+  // Routed through a Supabase Edge Function (supabase/functions/gemini-proxy)
+  // so the real Gemini key stays server-side — the whole invited group
+  // shares it instead of everyone needing their own. The function always
+  // responds 200 with an {ok, ...} envelope, so `error` here only ever
+  // means "couldn't reach the proxy at all" — a Gemini-side failure (bad
+  // key, rate limit, model error) shows up as `data.ok === false` instead.
   async function callGemini(body) {
-    const settings = (typeof BiteBookSettings !== 'undefined') ? BiteBookSettings.get() : {};
-    const apiKey = settings && settings.geminiApiKey;
-    if (!apiKey) {
-      const err = new Error('No Gemini API key saved.');
-      err.code = 'NO_KEY';
-      throw err;
-    }
+    const { data, error } = await supabaseClient.functions.invoke('gemini-proxy', { body });
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`;
-
-    let res;
-    try {
-      res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-    } catch (e) {
-      const err = new Error('Network error reaching Gemini.');
+    if (error) {
+      const err = new Error('Could not reach the AI proxy.');
       err.code = 'NETWORK';
       throw err;
     }
 
-    if (!res.ok) {
-      const err = new Error(`Gemini API error ${res.status}`);
-      if (res.status === 400 || res.status === 403) err.code = 'BAD_KEY';
-      else if (res.status === 404) err.code = 'MODEL_ERROR';
-      else if (res.status === 429) err.code = 'RATE_LIMIT';
+    if (!data || !data.ok) {
+      const status = data && data.status;
+      const err = new Error((data && data.error) || `Proxy error ${status}`);
+      if (status === 429) err.code = 'RATE_LIMIT';
+      else if (status === 404) err.code = 'MODEL_ERROR';
+      else if (status >= 500) err.code = 'NETWORK';
       else err.code = 'API_ERROR';
       throw err;
     }
 
-    const data = await res.json();
-    const textPart = data
-      && data.candidates
-      && data.candidates[0]
-      && data.candidates[0].content
-      && data.candidates[0].content.parts
-      && data.candidates[0].content.parts[0]
-      && data.candidates[0].content.parts[0].text;
+    const geminiData = data.body;
+    const textPart = geminiData
+      && geminiData.candidates
+      && geminiData.candidates[0]
+      && geminiData.candidates[0].content
+      && geminiData.candidates[0].content.parts
+      && geminiData.candidates[0].content.parts[0]
+      && geminiData.candidates[0].content.parts[0].text;
 
     if (!textPart) {
       const err = new Error('Empty response from Gemini.');
@@ -306,12 +296,6 @@ const BiteBookAI = (() => {
   }
 
   function friendlyErrorMessage(err) {
-    if (err && err.code === 'NO_KEY') {
-      return "You'll need a free Gemini API key first — add one in your Profile.";
-    }
-    if (err && err.code === 'BAD_KEY') {
-      return "That API key doesn't seem to work — double check it in your Profile.";
-    }
     if (err && err.code === 'MODEL_ERROR') {
       return "The AI model isn't available right now — this app may need a small update.";
     }

@@ -137,21 +137,6 @@
       </div>
     </div>
 
-    <div class="field-group" id="ai-settings">
-      <label class="field-label">✨ AI Assistant (optional)</label>
-      <span class="field-sublabel">
-        Powers Smart Entry — describe a meal in a sentence and we'll fill in the form for you.
-        Uses Google's free Gemini API. Your key stays on this device and is never included in exports.
-        <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Get a free key →</a>
-      </span>
-      <div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
-        <input type="password" id="gemini-api-key" class="text-input" style="flex: 1; min-width: 220px;" placeholder="Paste your Gemini API key" autocomplete="off">
-        <button type="button" class="btn btn-back" id="save-key-btn">Save Key</button>
-      </div>
-      <p class="upload-status" id="key-status"></p>
-      <button type="button" class="toggle-link" id="remove-key-btn" style="display: none; margin-top: 6px;">🗑️ Remove saved key</button>
-    </div>
-
     <div class="wizard-actions" style="border-top: none; padding-top: 0;">
       <span></span>
       <div class="wizard-actions-right">
@@ -172,7 +157,6 @@
 <script src="js/storage.js?v=2"></script>
 <script src="js/labels.js?v=2"></script>
 <script src="js/profile.js?v=2"></script>
-<script src="js/settings.js?v=2"></script>
 <script src="js/geo.js?v=2"></script>
 <script src="js/profile-page.js"></script>
 </body>
