@@ -97,8 +97,7 @@ document.addEventListener('bitebook:ready', async () => {
         : /\.(heic|heif|jpe?g|png|gif|webp|bmp|tiff?)$/i.test(file.name);
       if (!looksLikeImage) continue;
 
-      const isHeic = /\.(heic|heif)$/i.test(file.name) || file.type === 'image/heic' || file.type === 'image/heif';
-      if (isHeic) {
+      if (isHeicFile(file)) {
         photoStatus.textContent = 'Converting HEIC photo...';
         photoStatus.classList.remove('error');
       }
@@ -121,7 +120,8 @@ document.addEventListener('bitebook:ready', async () => {
           break;
         }
       } catch (e) {
-        photoStatus.textContent = "⚠️ Something went wrong with that photo — if it's a HEIC file, this browser may not support it; try converting it to JPG, or use another photo.";
+        console.error('Photo upload failed:', e);
+        photoStatus.textContent = `⚠️ Couldn't process that photo: ${e && e.message ? e.message : 'unknown error'}. Try another photo, or check the browser console for detail.`;
         photoStatus.classList.add('error');
       }
     }

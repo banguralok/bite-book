@@ -413,13 +413,23 @@ function dateTimeSummaryLabel(entry) {
 // compressImageFile relies on — silently fails there. This converts to a
 // JPEG blob first via heic2any (WASM libheif, no native codec needed), so
 // the rest of the pipeline never has to know the original was HEIC.
-async function normalizeToDecodableImage(file) {
-  const isHeic = /\.(heic|heif)$/i.test(file.name)
+function isHeicFile(file) {
+  return /\.(heic|heif)$/i.test(file.name)
     || file.type === 'image/heic' || file.type === 'image/heif';
-  if (!isHeic || typeof heic2any === 'undefined') return file;
+}
 
-  const converted = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
-  return Array.isArray(converted) ? converted[0] : converted;
+async function normalizeToDecodableImage(file) {
+  if (!isHeicFile(file)) return file;
+  if (typeof heic2any === 'undefined') {
+    throw new Error('HEIC conversion library failed to load');
+  }
+  try {
+    const converted = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
+    return Array.isArray(converted) ? converted[0] : converted;
+  } catch (e) {
+    const detail = (e && (e.message || e.code)) || 'unknown error';
+    throw new Error(`HEIC conversion failed: ${detail}`);
+  }
 }
 
 function compressImageFile(file, options) {

@@ -47,8 +47,7 @@ document.addEventListener('bitebook:ready', () => {
     photoInput.value = '';
     if (!file) return;
 
-    const isHeic = /\.(heic|heif)$/i.test(file.name) || file.type === 'image/heic' || file.type === 'image/heif';
-    if (isHeic) showStatus('Converting HEIC photo...', false);
+    if (isHeicFile(file)) showStatus('Converting HEIC photo...', false);
 
     try {
       const decodable = await normalizeToDecodableImage(file);
@@ -57,7 +56,8 @@ document.addEventListener('bitebook:ready', () => {
       updateButtonState();
       showStatus('', false);
     } catch (e) {
-      showStatus("⚠️ Something went wrong with that photo — if it's a HEIC file, this browser may not support it; try converting it to JPG, or use another photo.", true);
+      console.error('Photo attach failed:', e);
+      showStatus(`⚠️ Couldn't process that photo: ${e && e.message ? e.message : 'unknown error'}.`, true);
     }
   });
 
