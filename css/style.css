@@ -248,10 +248,112 @@ section h2 {
   font-size: 1.05rem;
 }
 
-.how-it-works, .whats-inside, .get-started {
+.transformation, .how-it-works, .whats-inside, .get-started {
   padding: 70px 6vw;
   max-width: 1200px;
   margin: 0 auto;
+}
+
+.transformation-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  flex-wrap: wrap;
+  margin-top: 48px;
+}
+
+.transformation-before { text-align: center; opacity: 0.75; }
+
+.before-photo {
+  width: 140px;
+  height: 140px;
+  border-radius: 12px;
+  background: var(--cream-2);
+  border: 2px dashed var(--brown-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.8rem;
+  margin: 0 auto 12px;
+}
+
+.before-caption {
+  font-style: italic;
+  color: var(--brown-soft);
+  font-size: 0.95rem;
+}
+
+.transformation-arrow {
+  font-size: 2rem;
+  color: var(--orange);
+  flex-shrink: 0;
+}
+
+.scrapbook-card {
+  background: var(--white);
+  border-radius: var(--radius-md);
+  padding: 26px 28px;
+  box-shadow: var(--shadow);
+  max-width: 300px;
+  text-align: left;
+  transform: rotate(-2deg);
+}
+
+.scrapbook-photo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--cream-2);
+  font-size: 1.6rem;
+  margin-bottom: 12px;
+}
+
+.scrapbook-card h3 {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 1.15rem;
+  margin: 0 0 4px;
+}
+
+.scrapbook-dish {
+  color: var(--orange-dark);
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+}
+
+.scrapbook-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.scrapbook-tags span {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--brown-soft);
+  background: var(--cream);
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.scrapbook-quote {
+  font-style: italic;
+  font-size: 0.88rem;
+  color: var(--brown);
+  border-left: 3px solid var(--orange);
+  padding-left: 12px;
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .transformation-row { flex-direction: column; }
+  .transformation-arrow { transform: rotate(90deg); }
+  .scrapbook-card { transform: none; }
 }
 
 .steps {
