@@ -14,6 +14,69 @@ function tallyBy(entries, getValueFn) {
   return Object.entries(counts).sort((a, b) => b[1] - a[1]);
 }
 
+function foodKey(food) {
+  return (food || '').trim().toLowerCase();
+}
+
+function groupByFood(entries) {
+  const byFood = {};
+  entries.forEach((e) => {
+    const key = foodKey(e.food);
+    if (!key) return;
+    if (!byFood[key]) byFood[key] = { name: e.food, entries: [] };
+    byFood[key].entries.push(e);
+  });
+  return byFood;
+}
+
+function buildFoodStoryNarrative(entries) {
+  const sentences = [];
+  const total = entries.length;
+
+  const cuisineCounts = tallyBy(entries, (e) => e.cuisine);
+  if (cuisineCounts.length) {
+    const [topCuisine, count] = cuisineCounts[0];
+    const share = count / total;
+    if (share >= 0.25) {
+      sentences.push(`You really love ${cuisineLabel(topCuisine)} food — ${Math.round(share * 100)}% of your logged meals.`);
+    }
+  }
+
+  const familyRated = entries.filter((e) => (e.companionTypes || []).includes('family') && e.rating);
+  if (familyRated.length >= 2) {
+    const avg = (familyRated.reduce((s, e) => s + e.rating, 0) / familyRated.length).toFixed(1);
+    sentences.push(`Family meals are your happiest meals — you rate them ${avg} ★ on average.`);
+  }
+
+  const byFood = groupByFood(entries);
+  let problemChild = null;
+  Object.values(byFood).forEach((group) => {
+    if (group.entries.length < 3) return;
+    const rated = group.entries.filter((e) => e.rating);
+    if (!rated.length) return;
+    const highCount = rated.filter((e) => e.rating >= 4).length;
+    const highShare = highCount / rated.length;
+    if (highShare < 0.5 && (!problemChild || group.entries.length > problemChild.count)) {
+      problemChild = { name: group.name, count: group.entries.length, highCount };
+    }
+  });
+  if (problemChild) {
+    sentences.push(`${escapeHtmlStats(problemChild.name)} has a problem — you've ordered it ${problemChild.count} times but only rated it well ${problemChild.highCount} time${problemChild.highCount === 1 ? '' : 's'}.`);
+  }
+
+  const placeCounts = tallyBy(entries, (e) => e.placeName);
+  const foodCounts = Object.values(byFood).map((g) => [g.name, g.entries.length]).sort((a, b) => b[1] - a[1]);
+  const topPlace = placeCounts[0];
+  const topFood = foodCounts[0];
+  if (topPlace && topPlace[1] >= 3) {
+    sentences.push(`You've been to ${escapeHtmlStats(topPlace[0])} ${topPlace[1]} times.`);
+  } else if (topFood && topFood[1] >= 3) {
+    sentences.push(`You've ordered ${escapeHtmlStats(topFood[0])} ${topFood[1]} times.`);
+  }
+
+  return sentences;
+}
+
 function barBlock(title, pairs, labelFn) {
   if (pairs.length === 0) {
     return `<div class="stat-block"><h3>${title}</h3><p class="stat-empty-note">Not enough data yet.</p></div>`;
@@ -61,6 +124,15 @@ document.addEventListener('bitebook:ready', async () => {
     .filter((e) => e.rating)
     .sort((a, b) => b.rating - a.rating)[0];
 
+  const narrativeSentences = buildFoodStoryNarrative(entries);
+  const narrativeHtml = `
+    <div class="story-narrative">
+      ${narrativeSentences.length
+        ? narrativeSentences.map((s) => `<p>${s}</p>`).join('')
+        : `<p>Log a few more meals and your food story will start to take shape here.</p>`}
+    </div>
+  `;
+
   const tiles = `
     <div class="stat-tiles">
       <div class="stat-tile"><div class="stat-tile-value">${entries.length}</div><div class="stat-tile-label">Total Entries</div></div>
@@ -96,7 +168,7 @@ document.addEventListener('bitebook:ready', async () => {
     </div>
   `;
 
-  container.innerHTML = tiles + topRatedBlock + cuisineBars + mealBars + companionBars + makerBars + insightsBlock;
+  container.innerHTML = narrativeHtml + tiles + topRatedBlock + cuisineBars + mealBars + companionBars + makerBars + insightsBlock;
 
   const insightsBtn = document.getElementById('ai-insights-btn');
   const insightsHint = document.getElementById('ai-insights-hint');

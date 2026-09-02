@@ -21,18 +21,30 @@
   <a href="entries.html" class="wizard-link-start" style="margin-bottom: 20px; display: inline-flex;">‹ Back to My Entries</a>
 
   <div class="entries-header">
-    <p class="eyebrow">the ultimate list</p>
+    <p class="eyebrow">the highlights</p>
     <h1>Your Rankings</h1>
-    <p class="section-sub" style="margin: 12px 0 0;">Your finished entries, in whatever order feels right. Use the arrows to reorder.</p>
+    <p class="section-sub" style="margin: 12px 0 0;">The best of what you've logged, sorted out automatically.</p>
   </div>
 
-  <div id="ranking-list" class="ranking-list"></div>
+  <div id="collections-content"></div>
 
-  <div id="ranking-empty" class="empty-state" style="display: none;">
+  <div id="collections-empty" class="empty-state" style="display: none;">
     <div class="empty-state-icon">🏆</div>
-    <h3>Nothing to rank yet</h3>
-    <p>Finish an entry and it'll show up here.</p>
+    <h3>Nothing to highlight yet</h3>
+    <p>Finish a few entries — rate them, note who you were with — and collections like Hall of Fame and Family Favorites will start showing up here.</p>
     <a href="entries.html" class="btn btn-primary">Back to My Entries</a>
+  </div>
+
+  <button type="button" class="toggle-link" id="manual-ranking-toggle" style="margin-top: 10px;">Or rank them yourself, one at a time ▾</button>
+  <div id="manual-ranking-wrap" style="display: none; margin-top: 14px;">
+    <div id="ranking-list" class="ranking-list"></div>
+
+    <div id="ranking-empty" class="empty-state" style="display: none;">
+      <div class="empty-state-icon">🏆</div>
+      <h3>Nothing to rank yet</h3>
+      <p>Finish an entry and it'll show up here.</p>
+      <a href="entries.html" class="btn btn-primary">Back to My Entries</a>
+    </div>
   </div>
 </main>
 

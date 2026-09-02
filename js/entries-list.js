@@ -35,6 +35,55 @@ function resumePageFor(entry) {
   return STEP_SEQUENCE[STEP_SEQUENCE.length - 1].page;
 }
 
+const DEDUPE_DISMISSED_KEY = 'bitebook:dedupeDismissed';
+
+function dedupeGroupKey(group) {
+  return group.names.slice().sort().join('|');
+}
+
+function getDismissedDedupeKeys() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(DEDUPE_DISMISSED_KEY) || '[]'));
+  } catch (e) {
+    return new Set();
+  }
+}
+
+function dismissDedupeGroup(key) {
+  const dismissed = getDismissedDedupeKeys();
+  dismissed.add(key);
+  localStorage.setItem(DEDUPE_DISMISSED_KEY, JSON.stringify(Array.from(dismissed)));
+}
+
+function renderDedupeBanner(entries) {
+  const banner = document.getElementById('dedupe-banner');
+  if (!banner) return;
+
+  const placeNames = entries.map((e) => e.placeName).filter(Boolean);
+  const groups = findLikelyDuplicatePlaceNames(placeNames);
+  const dismissed = getDismissedDedupeKeys();
+  const activeGroups = groups.filter((g) => !dismissed.has(dedupeGroupKey(g)));
+
+  if (activeGroups.length === 0) {
+    banner.style.display = 'none';
+    return;
+  }
+
+  banner.style.display = 'flex';
+  banner.innerHTML = `
+    <span>We found ${activeGroups.length} place name${activeGroups.length === 1 ? '' : 's'} that might be the same restaurant.</span>
+    <div class="dedupe-banner-actions">
+      <a href="dedupe.html" class="link-pill">Review →</a>
+      <button type="button" class="dedupe-banner-dismiss" id="dedupe-banner-dismiss" aria-label="Dismiss">✕</button>
+    </div>
+  `;
+
+  document.getElementById('dedupe-banner-dismiss').addEventListener('click', () => {
+    activeGroups.forEach((g) => dismissDedupeGroup(dedupeGroupKey(g)));
+    banner.style.display = 'none';
+  });
+}
+
 document.addEventListener('bitebook:ready', async () => {
   const listEl = document.getElementById('entries-list');
   const emptyEl = document.getElementById('empty-state');
@@ -71,6 +120,7 @@ document.addEventListener('bitebook:ready', async () => {
       directory.forEach((p) => directoryById.set(p.id, p.name || 'Unnamed'));
     }
     allEntriesCache = await BiteBookStorage.listEntries();
+    renderDedupeBanner(allEntriesCache);
   }
 
   function searchableText(entry) {

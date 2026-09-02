@@ -99,6 +99,51 @@ function guessTimeOfDayFromTime() {
   return 'late-night';
 }
 
+// Free, instant, client-side duplicate-place detection — no API call, so it
+// doesn't burn the user's rate-limited Gemini key and doesn't depend on the
+// AI proxy landing first. The AI-powered check in js/ai.js stays available
+// as an opt-in deeper pass for trickier name variants this can't catch.
+const PLACE_NAME_NOISE_WORDS = ['restaurant', 'cafe', 'café', 'diner', 'grill', 'kitchen', 'eatery', 'bar', 'bistro', 'the'];
+
+function normalizePlaceName(name) {
+  let n = (name || '').toLowerCase().trim();
+  n = n.replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+  const words = n.split(' ').filter((w) => w && !PLACE_NAME_NOISE_WORDS.includes(w));
+  return words.join(' ');
+}
+
+function findLikelyDuplicatePlaceNames(placeNames) {
+  const unique = Array.from(new Set((placeNames || []).filter(Boolean)));
+  const normalized = unique
+    .map((name) => ({ name, norm: normalizePlaceName(name) }))
+    .filter((p) => p.norm);
+
+  const groups = [];
+  const used = new Set();
+
+  for (let i = 0; i < normalized.length; i++) {
+    if (used.has(normalized[i].name)) continue;
+    const group = [normalized[i].name];
+    used.add(normalized[i].name);
+    for (let j = i + 1; j < normalized.length; j++) {
+      if (used.has(normalized[j].name)) continue;
+      const a = normalized[i].norm;
+      const b = normalized[j].norm;
+      const isMatch = a === b || (a.length >= 4 && b.includes(a)) || (b.length >= 4 && a.includes(b));
+      if (isMatch) {
+        group.push(normalized[j].name);
+        used.add(normalized[j].name);
+      }
+    }
+    if (group.length > 1) {
+      const suggestedName = [...group].sort((x, y) => y.length - x.length)[0];
+      groups.push({ names: group, suggestedName });
+    }
+  }
+
+  return groups;
+}
+
 function isSafeUrl(url) {
   return typeof url === 'string' && /^https?:\/\//i.test(url.trim());
 }

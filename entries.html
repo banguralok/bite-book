@@ -37,7 +37,6 @@
     <a href="stats.html" class="link-pill">📊 Stats</a>
     <a href="ranking.html" class="link-pill">🏆 Rankings</a>
     <a href="ask.html" class="link-pill">🗣️ Ask Your Journal</a>
-    <a href="dedupe.html" class="link-pill">🧹 Clean Up Places</a>
     <button type="button" class="link-pill" id="export-btn">⬇️ Export</button>
     <button type="button" class="link-pill" id="import-btn">⬆️ Import</button>
     <input type="file" id="import-file-input" accept=".json" style="display: none;">
@@ -45,6 +44,8 @@
   <p class="upload-status" id="import-export-status"></p>
 
   <p class="upload-status" id="smart-search-active-note" style="display: none;"></p>
+
+  <div id="dedupe-banner" class="dedupe-banner" style="display: none;"></div>
 
   <div id="entries-list" class="entries-list"></div>
 
