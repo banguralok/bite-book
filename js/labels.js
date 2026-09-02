@@ -3,6 +3,22 @@ function setChipSelected(chip, isSelected) {
   chip.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
 }
 
+// Used by js/step-nav.js (jump directly to any step while editing) and
+// entry-view.js (per-section edit links). Kept separate from
+// entries-list.js's STEP_SEQUENCE, which needs "is this step done"
+// predicates for resuming drafts — a different concern from navigation.
+const WIZARD_STEPS = [
+  { page: 'entry.html', icon: '🍽️', label: 'What' },
+  { page: 'entry-when.html', icon: '🕰️', label: 'When' },
+  { page: 'entry-where.html', icon: '📍', label: 'Where' },
+  { page: 'entry-who.html', icon: '👥', label: 'Who' },
+  { page: 'entry-made.html', icon: '👩‍🍳', label: 'Made By' },
+  { page: 'entry-why.html', icon: '🎈', label: 'Why' },
+  { page: 'entry-ingredients.html', icon: '🥕', label: 'Ingredients' },
+  { page: 'entry-loved.html', icon: '💛', label: 'Loved It' },
+  { page: 'entry-photos.html', icon: '📸', label: 'Photos' },
+];
+
 const FAMILY_RELATIONSHIP_LABELS = {
   mom: '👩 Mom',
   dad: '👨 Dad',

@@ -4,10 +4,13 @@ function escapeHtmlView(str) {
   return div.innerHTML;
 }
 
-function section(icon, label, innerHtml) {
+function section(icon, label, innerHtml, editHref) {
+  const editLink = editHref
+    ? `<a href="${editHref}" class="story-section-edit" aria-label="Edit ${label}">✏️</a>`
+    : '';
   return `
     <div class="story-section">
-      <div class="story-section-label">${icon} ${label}</div>
+      <div class="story-section-label">${icon} ${label}${editLink}</div>
       ${innerHtml}
     </div>
   `;
@@ -46,28 +49,29 @@ function buildStoryHtml(entry) {
   `;
 
   const sections = [];
+  const stepHref = (page) => `${page}?id=${encodeURIComponent(entry.id)}`;
 
   const placeBits = [entry.placeName, entry.placeAddress].filter(Boolean).join(' — ');
   if (placeBits || entry.placeType) {
     sections.push(section('📍', 'Where', `
       <p>${escapeHtmlView(placeBits || '')}</p>
       ${entry.placeType ? `<div class="story-chip-row"><span class="story-static-chip">${placeTypeLabel(entry.placeType)}</span></div>` : ''}
-    `));
+    `, stepHref('entry-where.html')));
   }
 
   const companionText = companionSummaryLabel(entry);
   if (companionText) {
-    sections.push(section('👥', 'Good Company', `<p>${escapeHtmlView(companionText)}</p>`));
+    sections.push(section('👥', 'Good Company', `<p>${escapeHtmlView(companionText)}</p>`, stepHref('entry-who.html')));
   }
 
   const makerText = makerSummaryLabel(entry);
   if (makerText) {
-    sections.push(section('👩‍🍳', 'Made By', `<p>${escapeHtmlView(makerText)}</p>`));
+    sections.push(section('👩‍🍳', 'Made By', `<p>${escapeHtmlView(makerText)}</p>`, stepHref('entry-made.html')));
   }
 
   const reasonText = reasonSummaryLabel(entry);
   if (reasonText) {
-    sections.push(section('🎈', 'The Occasion', `<p>${escapeHtmlView(reasonText)}</p>`));
+    sections.push(section('🎈', 'The Occasion', `<p>${escapeHtmlView(reasonText)}</p>`, stepHref('entry-why.html')));
   }
 
   if (entry.ingredientsText || entry.ingredientsLink || entry.ingredientsFile) {
@@ -84,7 +88,7 @@ function buildStoryHtml(entry) {
       const f = entry.ingredientsFile;
       inner += `<p><a href="${f.url}" download="${escapeHtmlView(f.name)}">${fileKindIcon(f.type)} ${escapeHtmlView(f.name)} — download</a></p>`;
     }
-    sections.push(section('🥕', 'What Went Into It', inner));
+    sections.push(section('🥕', 'What Went Into It', inner, stepHref('entry-ingredients.html')));
   }
 
   const likedTypes = entry.likedQualities || [];
@@ -103,16 +107,16 @@ function buildStoryHtml(entry) {
     if (entry.personalRank) {
       inner += `<div class="story-chip-row" style="margin-top:8px;"><span class="story-static-chip">${rankLabel(entry.personalRank)}</span></div>`;
     }
-    sections.push(section('💛', 'Why They Loved It', inner));
+    sections.push(section('💛', 'Why They Loved It', inner, stepHref('entry-loved.html')));
   }
 
   if (entry.reflection) {
-    sections.push(section('📝', 'In Their Own Words', `<p class="story-quote">${escapeHtmlView(entry.reflection)}</p>`));
+    sections.push(section('📝', 'In Their Own Words', `<p class="story-quote">${escapeHtmlView(entry.reflection)}</p>`, stepHref('entry-loved.html')));
   }
 
   if (photos.length > 1) {
     const gallery = photos.slice(1).map((p) => `<img src="${p.url}" alt="">`).join('');
-    sections.push(section('📸', 'More Photos', `<div class="story-gallery">${gallery}</div>`));
+    sections.push(section('📸', 'More Photos', `<div class="story-gallery">${gallery}</div>`, stepHref('entry-photos.html')));
   }
 
   const videos = entry.videos || [];
@@ -126,7 +130,7 @@ function buildStoryHtml(entry) {
       }
       return `<p>🔗 ${escapeHtmlView(v.url)} <em>(this link doesn't look safe, so it's not clickable)</em></p>`;
     }).join('');
-    sections.push(section('🎬', 'Videos', rows));
+    sections.push(section('🎬', 'Videos', rows, stepHref('entry-photos.html')));
   }
 
   return heroHtml + actionsHtml + sections.join('');

@@ -315,7 +315,34 @@ section h2 {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 36px;
+  margin-bottom: 14px;
+}
+
+.step-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 32px;
+}
+
+.step-nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: var(--cream-2);
+  font-size: 1.05rem;
+  text-decoration: none;
+  transition: background 0.15s, transform 0.15s;
+}
+
+.step-nav-item:hover { background: var(--orange); transform: translateY(-1px); }
+
+.step-nav-item.current {
+  background: var(--orange);
+  box-shadow: 0 0 0 3px var(--cream-2);
 }
 
 .wizard-progress-track {
@@ -1225,6 +1252,15 @@ section h2 {
 }
 
 .story-section p { line-height: 1.6; }
+
+.story-section-edit {
+  margin-left: auto;
+  font-size: 0.95rem;
+  opacity: 0.55;
+  text-decoration: none;
+}
+
+.story-section-edit:hover { opacity: 1; }
 
 .story-quote {
   font-style: italic;
