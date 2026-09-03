@@ -64,7 +64,11 @@ img, svg { max-width: 100%; }
   gap: 8px;
 }
 
-.brand-emoji { font-size: 1.5rem; }
+.brand-icon {
+  height: 34px;
+  width: auto;
+  display: block;
+}
 
 .nav-links {
   display: flex;

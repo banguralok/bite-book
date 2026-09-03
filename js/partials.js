@@ -8,7 +8,7 @@ function buildSiteHeader() {
 
   return `
     <a class="brand" href="index.html">
-      <span class="brand-emoji">🍜</span> Bite Book
+      <img class="brand-icon" src="icons/header-icon.png" alt="Bite Book"> Bite Book
     </a>
     <nav class="nav-links">
       <a href="entries.html">My Entries</a>
