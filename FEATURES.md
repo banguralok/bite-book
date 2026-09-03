@@ -1,47 +1,54 @@
 # Bite Book — Features & Functionality
 
-Bite Book is a personal food-journaling site: a guided wizard for logging meals, plus pages for browsing, searching, ranking, and reflecting on everything you've eaten. It's a static site (HTML/CSS/vanilla JS, no build step, no server) that stores everything locally in the browser via `localStorage` — nothing is sent anywhere.
+Bite Book is a personal food-journaling app for a family and their close circle: a guided (and AI-assisted) way to capture meals as memories — the dish, the place, who was there, why it mattered — plus pages for browsing, sharing, ranking, and reflecting on everything logged. It's a static front end (HTML/CSS/vanilla JS, no build step) backed by Supabase (Postgres, Auth, Storage, and one Edge Function) — accounts, entries, and photos all sync across devices, and privacy is enforced at the database layer via Row Level Security: an entry is visible only to its owner, or to someone it's been explicitly shared with.
 
-This document has two parts: a **Feature List** (what the app can do, at a glance) and a **Functionality List** (how each part actually works, page by page).
+This document has two parts: a **Feature List** (what the app can do, at a glance) and a **Functionality List** (how each part actually works, page by page). See `ROADMAP.md` for what shipped when, what's on hold, and what's proposed but not built yet; see `VISION.md` for the why behind the what.
 
 ---
 
 ## Feature List
 
+**Accounts & sharing**
+- Password-based sign-in and self-serve account creation
+- Every user gets their own private journal by default — nothing is visible to anyone else until explicitly shared
+- **Sharing**: pick anyone in your circle and share a single entry with them; shared entries show up in the recipient's My Entries, tagged with who shared them, and can't be edited or deleted by anyone but the original owner
+- **Cross-user duplicate detection**: if two people in the same circle log what looks like the same real-world meal (matching place, date, and — when available — location), both get notified. The earlier-logged entry is treated as the record; the other person is asked whether to remove theirs, with a clear warning that their own rating/reflection/photos on that entry are theirs alone and won't be merged. Removing an entry that wasn't already shared automatically grants the remover access to the surviving one, so agreeing "yes, that's a duplicate" never costs someone their only record of the memory. A lighter, informational notification fires separately if the entry being kept turns out to be missing details (photos, ingredients) the removed one had.
+
 **Logging a meal**
-- 9-step guided entry wizard: What → When → Where → Who You Ate With → Who Made It → Why It Was Made → Ingredients → What You Loved → Photos/Videos
-- Autosave on every field, with resumable drafts (leave anytime, pick back up exactly where you left off)
-- "Finish Later" exit available on every step
-- Quick Log: a one-field fast-capture path for when you just want to log the food name and fill in the rest later
-- **Smart Entry**: describe a meal in a sentence ("Had biryani at the Dhaba with mom for her birthday, loved it") and/or attach a photo, and AI (Google Gemini, free tier) fills in as much of the 9-step form as it can — food, meal type, cuisine, date, place, who was there (including matching your saved family members), who made it, why, rating, and more — all pre-filled and ready to review/edit through the normal wizard. A photo alone is enough — AI identifies the dish, and the photo carries forward into Step 9 automatically
-- Smart auto-detection throughout — meal type and time-of-day guessed from the clock, place type and cuisine guessed from GPS + OpenStreetMap, "made by" guessed from restaurant detection, and birthday/anniversary occasions guessed from your saved dates — always shown as an overridable suggestion, never locked in
-- Place-name autocomplete on the Where step: suggests places you've typed before as you type, so the same place stays spelled the same way instead of drifting into near-duplicates over time (no AI, no network — instant and free). Suggestions are weighted by distance from your saved home (or your live location, if just fetched) — a restaurant a few towns over can show up, but a place from a trip across the country or overseas won't clutter today's suggestions
+- **Smart Entry** (the default way to log something): describe a meal in a sentence and/or attach a photo, optionally tag your current location, and AI fills in as much of the full form as it can. A confirmation card shows what was understood right there on the page — one tap saves it as a finished entry, or you can drop into the full form to fine-tune anything first
+- Quick Log: a one-field fast-capture path for when you don't want to type a sentence or wait on AI — auto-fills date/time/place/maker from the clock and your location, no network dependency
+- The full 9-step guided wizard is still there as a fallback for anyone who'd rather fill in every field by hand
+- Autosave on every field, with resumable drafts and a step-navigator to jump directly to any step while editing, instead of clicking through all 9
+- Smart auto-detection throughout — meal type/time-of-day from the clock, place type/cuisine from GPS, "made by" from restaurant detection, birthday/anniversary occasions from your saved dates — always an overridable suggestion, never locked in
+- Place-name autocomplete, geography-aware, to keep the same place spelled the same way over time
 
 **Browsing & managing entries**
-- Searchable, filterable "My Entries" list (search by food/place/ingredients/reflection/people; filter by complete/draft)
-- **Smart Search**: when a plain search comes up empty, AI can search by meaning instead — "something spicy" finds dishes tagged with a spicy quality even if the word "spicy" never appears
-- **Clean Up Places**: AI scans your place names for likely duplicates from inconsistent typing ("Spice Villa" vs "Spice Villa Restaurant") and lets you review and merge each group — nothing changes without your approval
+- Searchable, filterable My Entries list, with entries you own and entries shared with you shown together (shared ones tagged with who shared them, and without a delete button, since only the owner can remove them)
+- **On This Day**: surfaces a past entry whose date matches today, from a prior year, right above the list
+- **Smart Search**: AI semantic search when a plain substring search comes up empty
+- **Clean Up Places**: runs automatically in the background (a free, instant, non-AI heuristic) and shows a dismissible banner only when it actually finds likely duplicate place names; the AI-powered deeper check is now an opt-in "trickier matches" button on the review page, for names the heuristic can't catch
 - Draft entries resume at the correct wizard step automatically
-- Delete with a 6-second undo window
+- Delete with a 6-second undo window (only available on entries you own)
 - "Log This Again" — duplicate a past entry's core details into a fresh draft
-- Read-only "story view" page for each completed entry, with a hero photo and all the details laid out narratively
-- Share any entry as a downloadable image (auto-generated PNG card)
+- Read-only "story view" for each completed entry, with per-section edit links (hidden on entries shared with you, since you can't edit someone else's entry) and a "share as image" export
+- **Trips**: group entries into their own story — create a trip, add existing entries to it, see a small stats strip (meal count, distinct places, date range, top cuisine)
 
 **Insights**
-- Stats page: totals, average rating, entries this month, top-rated dish, and breakdowns of your most common cuisines, meal times, dining companions, and cooks — plus on-demand **AI Insights**, a few specific, data-grounded observations about your eating patterns
-- Rankings page: manually reorder your complete entries (drag-free, up/down arrows), defaulting to rating order
-- **Ask Your Journal**: a chat interface (AI, Google Gemini free tier) that answers natural-language questions about everything you've logged — "What's my highest-rated dish?", "How often does mom cook for me?" — with follow-up questions understood in context
+- **Stats → "Your Food Story"**: leads with a few plain-language narrative observations computed from your own data (dominant cuisine, family-meal average rating, a "problem child" dish, your most-repeated place), with the original tiles and cuisine/meal-time/company/maker breakdowns below as supporting detail, plus on-demand **AI Insights**
+- **Rankings → collections**: auto-generated groupings (Hall of Fame, Most Loved, Family Favorites, Places Worth Returning To, Taste Evolution over time) lead the page; manual drag-free reordering is still there, tucked behind a "rank them yourself" toggle
+- **Ask Your Journal**: a chat interface answering natural-language questions about everything visible to you — your own entries and anything shared with you — correctly attributing shared entries to whoever actually shared them, rather than assuming you were there
 
 **Personalization**
-- Profile page: name, avatar, home address (for home-vs-restaurant detection), your birthday and anniversary
-- Family members: add people with a relationship (Mom, Dad, Sibling, Spouse, etc.), optional name, and optional birthday/anniversary — they then become quick-tap options under "Who You Ate With," and their special dates power the auto-suggested occasion in "Why It Was Made"
+- Profile page: name, avatar, password, home address (for home-vs-restaurant detection), birthday and anniversary
+- Family members: add people with a relationship, optional name, and optional birthday/anniversary — quick-tap options under "Who You Ate With," and their special dates power the auto-suggested occasion in "Why It Was Made"
+- 🔔 Notifications bell in the header, badge count for anything pending (currently: duplicate-entry notifications)
 
 **Data safety**
 - Export your full journal (entries + profile) as a JSON backup file, anytime
 - Import a JSON backup to restore or merge entries
 
 **Platform**
-- Installable as a Progressive Web App (home-screen icon, offline-capable shell)
+- Installable as a Progressive Web App (real app icon and logo, home-screen icon, offline-capable shell)
 - Mobile-responsive layout throughout
 - Accessible chip/toggle controls (`aria-pressed`, labeled icon buttons, visible focus states)
 
@@ -49,63 +56,54 @@ This document has two parts: a **Feature List** (what the app can do, at a glanc
 
 ## Functionality List
 
-### The 9-Step Entry Wizard
+### Accounts — [login.html](login.html)
+Sign in with a password, or create a new account directly (email + password, no invite required for the current beta round — see `ROADMAP.md` for the invite-by-email flow this temporarily replaced, kept in the code but not wired to the UI). A new account lands on the Profile page's welcome flow to pick a name and avatar before going any further.
 
-Every step shares the same shell: a progress bar ("Step N of 9"), a debounced autosave badge, a "Finish Later" link back to My Entries, and Back/Continue buttons that carry the entry's ID through the URL. Continue is disabled until that step's required field is filled. Reopening a link with `?id=` restores every prior answer.
+### Sharing
+From an entry's story view, its owner can open a "Share with..." panel listing everyone in their circle (via `profile_directory`, a narrow name/avatar-only mirror of profiles — never birthdays, addresses, or family data) and tap to share or unshare, instantly. RLS enforces that only the owner can create or revoke a share, and that a shared entry is readable — never editable — by the recipient.
 
-1. **What** ([entry.html](entry.html)) — Food name (free text), meal type (single-select chips), cuisine (single-select chips). *Smart guess:* meal type is pre-picked from the current clock time (breakfast/lunch/high tea/dinner/supper), with a hint and one-tap override.
-2. **When** ([entry-when.html](entry-when.html)) — Date (Today/Yesterday/2 days ago/pick a date) and time (fuzzy time-of-day chips or an exact time picker). *Smart guess:* time-of-day chip pre-picked from the current hour.
-3. **Where** ([entry-where.html](entry-where.html)) — Place name, optional address, place type. The place-name field autocompletes from your own past entries (a native `<datalist>`) so retyping "Spice Villa" doesn't drift into "Spice Villa Restaurant" a few entries later — this is the preventive counterpart to [Clean Up Places](dedupe.html), which catches drift that already happened. Suggestions are geography-aware: places within ~250km of your saved home (or your freshly-detected current location, once fetched) are ranked by distance; places you've only ever logged with no known coordinates still show up, ranked by how often you've used them; anything farther than ~250km is left out entirely, so a place from a distant trip won't surface while you're typing a local entry. *Smart guess:* "Use My Current Location" reverse-geocodes via OpenStreetMap; within 150m of your saved home address it tags "Home," otherwise OSM's amenity tags can auto-tag "Restaurant/Café" and infer cuisine.
-4. **Who You Ate With** ([entry-who.html](entry-who.html)) — Companion type (multi-select chips: solo, family, friends, etc. — "Just Me" is exclusive of everything else). Selecting "Family" reveals your saved family members as quick-tap chips. Optional free-text name field.
-5. **Who Made It** ([entry-made.html](entry-made.html)) — Single-select maker (you, mom, dad, a chef/restaurant, store-bought, etc.). *Smart guess:* pre-selects "A Chef/Restaurant" if the Where step detected a restaurant.
-6. **Why It Was Made** ([entry-why.html](entry-why.html)) — Single-select reason (birthday, anniversary, celebration, comfort food, craving, etc.). *Smart guess:* if the meal's date matches your saved birthday/anniversary — or a family member's — the matching reason is pre-selected with a hint like "Looks like it's Sunita's birthday." Date-relevant reasons reveal an optional occasion-date field.
-7. **Ingredients** ([entry-ingredients.html](entry-ingredients.html)) — Optional: free-text ingredients, a recipe link (auto-detects Instagram/YouTube/TikTok/Pinterest/etc. and shows a platform badge), or a single file upload (image/PDF/doc, capped at 1.5MB).
-8. **What You Loved** ([entry-loved.html](entry-loved.html)) — Multi-select liked qualities, 5-star rating, "would eat again" (yes/maybe/no), frequency, personal rank, and an optional reflection.
-9. **Photos/Videos** ([entry-photos.html](entry-photos.html)) — Up to 6 photos (compressed client-side via canvas to fit local storage) and up to 4 videos (short upload or pasted link). Finishing this step marks the entry `complete`.
+### Cross-user duplicate detection — [notifications.html](notifications.html)
+Runs client-side whenever My Entries loads: your own complete entries are checked against a narrow, database-wide view (place name, date, owner — never entry content) for likely matches by place and date. A match writes a notification for both people via a security-definer database function (so a client can never write into someone else's notifications, or grant itself a share, directly). The earlier-logged entry is always treated as the keeper. Resolving a notification either dismisses it as "not a duplicate" (remembered, so it won't re-flag) or removes your entry — with a warning that your own rating/reflection/photos on it are yours alone — and, if the two entries weren't already connected by a share, automatically grants you access to the surviving one.
 
-### Story View — [entry-view.html](entry-view.html)
-Read-only narrative page for a finished entry: hero photo, title, and conditionally-rendered sections for place, company, maker, occasion, ingredients, what-you-loved, reflection, extra photos, and videos. Actions: **Edit** (back into the wizard), **Log This Again** (duplicates core fields into a new draft), and **Share** (renders the entry onto a canvas — photo, title, key facts, reflection quote, watermark — and downloads it as a PNG). All links are scheme-checked before being made clickable.
-
-### My Entries — [entries.html](entries.html)
-- Live search across food, place, ingredients, reflection, maker, and companion names.
-- Status filter: All / Complete / Draft.
-- Each card shows a tag summary, status, and last-updated time; complete entries link to the story view, drafts resume at the exact wizard step they left off on.
-- **Export**: downloads all entries + your profile as a timestamped JSON backup.
-- **Import**: restores/merges entries from a JSON backup file (with confirmation), sanitizing any unsafe links before merging.
-- **Delete**: confirms, then hides the entry immediately with a 6-second "Undo" toast before the deletion is finalized.
-- **Log This Again** available directly from the list.
-- **Smart Search**: if the live substring search returns nothing for the current query, a "✨ Try Smart Search" button appears. It sends the query plus a compact snapshot of your entries (cuisine, ingredients, liked qualities, reflection, etc.) to Gemini and asks which ones plausibly match in meaning, not just literal words — results are labeled so it's clear they came from AI reasoning rather than an exact match.
-
-### Quick Log — [quick-log.html](quick-log.html)
-A single food-name field for fast capture. Submitting saves a draft immediately and auto-fills, in the background: today's date, meal type and time-of-day (guessed from the clock), and place/maker/cuisine (guessed from geolocation the same way the Where step does — home-proximity first, restaurant detection second). A live preview shows what was auto-captured before you submit, and a link escapes to the full wizard if you'd rather fill it in by hand.
+### The Wizard — [entry.html](entry.html) and 8 more steps
+Same 9 steps as before (What → When → Where → Who → Made By → Why → Ingredients → Loved It → Photos), each with autosave and a "Finish Later" exit. New: a step-navigator bar (visible whenever editing an existing entry) lets you jump directly to any step instead of clicking Continue through all nine. Data now lives in Supabase — photos/videos upload to a private Storage bucket and are served via short-lived signed URLs, never a public link.
 
 ### Smart Entry — [smart-entry.html](smart-entry.html)
-A free-text box and/or a photo upload: describe a meal in a sentence or two, attach a photo, or both, and an AI model (Google Gemini, called directly from the browser with your own free API key) parses it into a structured draft entry — food, meal type, cuisine, date (relative dates like "yesterday" resolved automatically), place, who was there (matched against your saved family members by name/relationship), who made it, why, liked qualities, and rating, wherever the input clearly supports it. A photo alone is enough to identify the dish (and is carried straight into Step 9's photo grid, already attached). Anything the AI can't confidently infer falls back to the same clock-based smart guesses used elsewhere (meal type/time-of-day), or is left blank for you to fill in. The result is saved as a normal draft and you're taken straight into Step 1 of the regular wizard to review and correct anything before continuing — nothing is ever silently accepted. Requires a free Gemini API key, entered once on the Profile page (see below); without one, the page explains how to get one instead of failing silently.
+The default way to start a new entry (linked from the header's "New Entry" button, the landing page, and the empty-entries state). Describe a meal in a sentence and/or attach a photo; a "📍 Tag My Location" button optionally captures GPS + reverse-geocoded place details as a fallback for whatever the description didn't cover. AI (Gemini, via a shared server-side proxy — no per-user API key needed) parses the input into a structured entry. Instead of always routing into the full wizard "to review," a confirmation card appears right there showing what was understood; "✅ Looks Good — Save" marks the entry complete and goes straight to its finished story, or "✏️ Let Me Fine-Tune This" drops into the familiar wizard for anyone who wants to adjust something first.
+
+### My Entries — [entries.html](entries.html)
+Live search and status filtering across everything visible to you (owned + shared). An **On This Day** card above the list surfaces a past entry matching today's date from a prior year. A dismissible banner (free, instant, client-side — no AI call) appears only when likely duplicate place names are found among your own entries, linking to Clean Up Places. Entries shared with you show a "shared by" tag and have no delete button. Export/Import, Smart Search, and Log This Again all work as before.
+
+### Trips — [trips.html](trips.html) / [trip-view.html](trip-view.html)
+Create a trip, add any of your own complete entries to it, and see a small stats strip (meal count, distinct places, date range, top cuisine) plus the grouped entries themselves. Trips are owner-only for now — not yet shareable with others (a deliberate near-term limit, see `ROADMAP.md`).
 
 ### Stats — [stats.html](stats.html)
-Computed live from your entries: total/complete counts, average rating, entries logged this month, your top-rated dish, and four ranked breakdowns (top cuisines, most common meal times, most common company, most common cooks), each shown as a bar chart of your top 5. An **AI Insights** section generates 3-5 specific, data-grounded observations on demand (e.g. "Social dining brings out your highest ratings — every meal shared with family or friends scored 4+ stars") — nothing runs automatically, only when you click Generate.
+Leads with "Your Food Story": a handful of plain-language sentences computed from your own data (only the ones that actually qualify — no padding). Below that, the original tiles (totals, average rating, this month, top-rated dish) and ranked breakdowns (cuisines, meal times, company, cooks) remain as supporting detail, followed by on-demand **AI Insights**.
 
 ### Rankings — [ranking.html](ranking.html)
-Every complete entry, defaulted to rating order, with your own manual reordering (via Up/Down arrows) remembered separately and taking precedence. Each row shows a thumbnail, title (linking to the story view), and star rating.
+Leads with auto-generated collections — Hall of Fame (5-star entries), Most Loved (would-eat-again), Family Favorites, Places Worth Returning To (repeat visits, high average rating), and Taste Evolution (top cuisine + average rating by quarter). The original manual up/down reordering is still available, collapsed behind an "Or rank them yourself" toggle.
 
 ### Ask Your Journal — [ask.html](ask.html)
-A chat page (linked from My Entries, next to Stats and Rankings). Every question is sent to Gemini along with a snapshot of your journal (food, dates, ratings, companions, reasons, reflections — everything except photos/videos, which stay out of the payload) as system context, so it can answer specifically — citing dish names, dates, and people rather than generic advice. Conversation history is kept for the session so follow-up questions ("Would I eat that again?") are understood in context without repeating yourself. If the data can't answer a question, it says so rather than guessing. Uses the same Gemini API key as Smart Entry.
+Chat interface over everything visible to you — your own entries plus anything shared with you. Each entry in the AI's context is tagged with its real owner ("me" or the sharer's name), and the system prompt explicitly tells the model not to assume "I" refers to the asker for a shared entry — so a question about a meal someone else shared gets attributed to the right person instead of presented as the asker's own solo meal.
 
 ### Clean Up Places — [dedupe.html](dedupe.html)
-A utility page (linked from My Entries) for catching place names that drifted apart from inconsistent typing over time. "✨ Find Possible Duplicates" sends your distinct place names to Gemini, which groups ones it's fairly confident refer to the same real place (conservatively — it's told to leave anything uncertain separate) and suggests a canonical name for each group. Each group is a card with an editable name field and its own Merge/Skip buttons — nothing is changed until you click Merge on that specific group, which rewrites `placeName` across every affected entry.
+Runs the same free, instant heuristic used for the My Entries banner automatically on load — no button needed for the common case. A "🔍 Also Check for Trickier Matches (AI)" button remains for name variants the heuristic can't catch (e.g. "IHOP" vs. its full name), since that one costs an API call and stays opt-in.
 
 ### Profile — [profile.html](profile.html)
-Name, avatar, home address (with a "use my current location" geolocation button), your birthday and anniversary, and a family roster. Each family member has a relationship, optional name, and optional birthday/anniversary. This data is used only locally — to power the home/restaurant detection in Quick Log and the Where step, the family quick-picker in Who You Ate With, and the birthday/anniversary auto-suggestion in Why It Was Made. Also holds the optional **Gemini API key** that powers every AI feature (Smart Entry, Ask Your Journal, Smart Search, AI Insights, Clean Up Places) — stored separately from the rest of your profile so it's never swept up in the Export/Import backup file.
+Name, avatar, password, home address (with "use my current location"), birthday/anniversary, and a family roster (relationship, optional name, optional birthday/anniversary) — used for home/restaurant detection, the family quick-picker, and birthday/anniversary auto-suggestions. The AI features no longer need a personal API key here — Gemini calls are proxied through a shared server-side key.
+
+### Notifications — [notifications.html](notifications.html)
+Currently used for cross-user duplicate-entry resolution (see above); a 🔔 badge in the header shows the pending count. Built to extend to other notification types later.
 
 ### Landing Page — [index.html](index.html)
-Static introduction: hero with a "Start My First Entry" call to action, a 3-step "how it works" explainer, and a preview of everything an entry can capture.
+Hero with a "Start My First Entry" call to action (into Smart Entry), a before/after section showing a plain photo-and-caption turning into a warm "scrapbook card" record, a 3-step "how it works" explainer, and a preview of everything an entry can capture.
 
 ### Progressive Web App
-[manifest.json](manifest.json) makes the site installable (home-screen icon, standalone window, portrait lock). [service-worker.js](service-worker.js) caches the app shell on install and serves network-first with a cache fallback, so previously visited pages keep working offline.
+[manifest.json](manifest.json) makes the site installable (real app icon, standalone window, portrait lock). [service-worker.js](service-worker.js) caches the app shell for offline use.
 
 ### Data Safety
-Everything lives in the browser's `localStorage` — there is no account and nothing leaves your device. Because of that, **Export** (JSON download of every entry plus your profile) and **Import** (restore/merge from that file) exist as your backup net against clearing browser data, switching devices, or browser storage limits.
+Entries and photos live in Supabase, scoped to your account by Row Level Security — not "on your device" the way the original local-only version worked. **Export** (JSON download of every entry plus your profile) and **Import** (restore/merge from that file) remain as your own backup net, independent of the backend.
 
 ---
 
-*Not yet built: a real account system with server-side storage/sync (currently deferred — everything is local-only, tied to one browser on one device).*
+*The original single-user, `localStorage`-only version of Bite Book is preserved on the `main` branch as a fallback. Everything above describes the current `multiuser-edition` branch.*

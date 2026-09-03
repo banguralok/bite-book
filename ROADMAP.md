@@ -1,6 +1,6 @@
 # Bite Book — Product Roadmap
 
-A living record of what's shipped, what's on hold, and what's proposed but not yet planned — kept in sync as work happens, so there's always one place that answers "did we build that, and when." Maintained by Claude alongside the code; update it in the same session as any feature that ships, gets paused, or gets newly proposed.
+A living record of what's shipped, what's on hold, and what's proposed but not yet planned — kept in sync as work happens, so there's always one place that answers "did we build that, and when." Maintained by Claude alongside the code; update it in the same session as any feature that ships, gets paused, or gets newly proposed. See `VISION.md` for the why behind this list, and `FEATURES.md` for what each shipped item actually does today.
 
 ## How to read this
 
@@ -35,18 +35,18 @@ The pivot from local-only to a real backend. `f83b9fc`..`3f64143`.
 - **Trips**: group entries into their own story, with a small stats strip (`ed224e2`)
 - **Smart Entry photo-first**: GPS location tagging + an inline confirm-or-fine-tune card instead of always routing through the full wizard (`ae22379`)
 
-### v2.2 — in progress, not yet deployed
+### v2.2 — deployed 2026-09-03
 - **Logo & app icon**: real logo replacing the 🍜 emoji placeholder across favicon, PWA icons, and the header (`72d1aa8`)
 - **Roadmap**: this document (`88ea599`)
 - **Bug fixes**: AI proxy CORS + real error surfacing, logo flash-redirect, Ask Your Journal shared-entry attribution (`c8421e4`)
-- **Self-signup**: password-based account creation replaces invite-by-email on the login page for the beta round (`eb44f9a`) — ⚠️ blocked from being truly email-independent until "Confirm email" is turned off in Supabase Auth settings; see On Hold below
+- **Self-signup**: password-based account creation replaces invite-by-email on the login page for the beta round (`eb44f9a`) — confirmed working end-to-end once "Confirm email" was turned off in Supabase Auth settings
+- **FEATURES.md and VISION.md**: brought FEATURES.md up to date with the whole multi-user pivot (it had been stale since before it started); added VISION.md as a living statement of what Bite Book is for, to be refined alongside the roadmap
 
 ## On hold
 
 - **Gamification** (points, levels, incentives) — paused explicitly by the user, 2026-09-03. Revisit once there's a concrete answer to "what's the actual incentive" (see Proposed, below).
 - **Invite-by-tag with on-the-fly invite** — the sharing picker already works like a "tag" UI; the new part (inviting someone not yet on Bite Book straight from the share screen) is on hold while the user hand-invites a small beta group and keeps email invites off for now (2026-09-03).
 - **Invite-by-email (magic link)** — deliberately disabled on the login page (code kept, just not wired to the UI — see `js/login.js`) in favor of self-signup for the beta round, 2026-09-03. Bring back post-beta.
-- **Bulk test-user + demo data seeding** — requested 2026-09-03 (a test family, friends, colleagues, and a few international users, all password-based, then entries spanning the app's functionality). Blocked: confirmed live that Supabase currently requires email confirmation on signup, so creating ~15 accounts right now would hit the exact same email rate limit this was meant to avoid. Needs "Confirm email" turned off in Supabase Dashboard → Authentication → Sign In / Up → Email before this can proceed.
 
 ## Proposed — needs discussion before planning
 
