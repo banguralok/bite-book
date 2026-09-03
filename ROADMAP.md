@@ -37,16 +37,19 @@ The pivot from local-only to a real backend. `f83b9fc`..`3f64143`.
 
 ### v2.2 — in progress, not yet deployed
 - **Logo & app icon**: real logo replacing the 🍜 emoji placeholder across favicon, PWA icons, and the header (`72d1aa8`)
-- *(bug fixes from 2026-09-03 feedback land here — see below)*
+- **Roadmap**: this document (`88ea599`)
+- **Bug fixes**: AI proxy CORS + real error surfacing, logo flash-redirect, Ask Your Journal shared-entry attribution (`c8421e4`)
+- **Self-signup**: password-based account creation replaces invite-by-email on the login page for the beta round (`eb44f9a`) — ⚠️ blocked from being truly email-independent until "Confirm email" is turned off in Supabase Auth settings; see On Hold below
 
 ## On hold
 
 - **Gamification** (points, levels, incentives) — paused explicitly by the user, 2026-09-03. Revisit once there's a concrete answer to "what's the actual incentive" (see Proposed, below).
 - **Invite-by-tag with on-the-fly invite** — the sharing picker already works like a "tag" UI; the new part (inviting someone not yet on Bite Book straight from the share screen) is on hold while the user hand-invites a small beta group and keeps email invites off for now (2026-09-03).
+- **Invite-by-email (magic link)** — deliberately disabled on the login page (code kept, just not wired to the UI — see `js/login.js`) in favor of self-signup for the beta round, 2026-09-03. Bring back post-beta.
+- **Bulk test-user + demo data seeding** — requested 2026-09-03 (a test family, friends, colleagues, and a few international users, all password-based, then entries spanning the app's functionality). Blocked: confirmed live that Supabase currently requires email confirmation on signup, so creating ~15 accounts right now would hit the exact same email rate limit this was meant to avoid. Needs "Confirm email" turned off in Supabase Dashboard → Authentication → Sign In / Up → Email before this can proceed.
 
 ## Proposed — needs discussion before planning
 
-- ❓ **Self-serve signup** — `login.html` only supports sign-in today; there's no way to create an account from just a link. Needs a decision: fully open signup, or keep hand-inviting via the Supabase dashboard?
 - 💡 **Roles (admin / general / power user)** — access-control change, needs the exact admin-visibility boundary and promotion threshold agreed before it's planned. Starting proposal on the table: `profiles.role`, admin sees aggregates only (never another person's private text), power-user promotion at ~30 complete entries or 21 distinct days logged.
 - 💡 **Icon/graphic overhaul** — emoji icons read as generic next to the new logo. Scope decision needed: full custom icon set vs. a targeted pass on the highest-visibility spots.
 - 💡 **Admin knowledge graph** of users' food journeys (special days vs. everyday, travel patterns, grouped/linked) — needs a decision on what "see it" actually means (a page of grouped insights vs. an actual graph visualization) before a data model can be designed.
@@ -56,4 +59,3 @@ The pivot from local-only to a real backend. `f83b9fc`..`3f64143`.
 - 💡 **Landing page / retention redesign** — "why would they come back" — the user has separately flagged wanting to redo the current landing page.
 - 💡 **Location-based restaurant recommendations from other users' data** — the most ambitious item on the list; a real recommendation-engine feature (taste-similarity across users + live location matching), treated as a later-phase idea.
 - ❓ **Gender/ethnicity as optional profile fields** — small, just needs a green light.
-- ❓ **Demo data seeding** for admin/power-user features — proposed approach: one or two dedicated demo accounts, not mixed into real users' journals. Needs confirmation.
