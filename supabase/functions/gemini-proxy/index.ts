@@ -21,6 +21,7 @@ const GEMINI_MODEL = 'gemini-3.6-flash';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 function jsonResponse(obj: unknown) {

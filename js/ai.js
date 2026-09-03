@@ -68,7 +68,17 @@ const BiteBookAI = (() => {
     const { data, error } = await supabaseClient.functions.invoke('gemini-proxy', { body });
 
     if (error) {
-      const err = new Error('Could not reach the AI proxy.');
+      let detail = error.message || 'unknown error';
+      if (error.context && typeof error.context.text === 'function') {
+        try {
+          const bodyText = await error.context.text();
+          if (bodyText) detail = bodyText;
+        } catch (e) {
+          // ignore — fall back to error.message
+        }
+      }
+      console.error('gemini-proxy invoke failed:', error, detail);
+      const err = new Error(`Could not reach the AI proxy — ${detail}`);
       err.code = 'NETWORK';
       throw err;
     }
@@ -131,10 +141,11 @@ const BiteBookAI = (() => {
 
   function buildJournalSystemPrompt(context) {
     return [
-      "You are a friendly assistant answering questions about someone's personal food journal app called Bite Book.",
+      "You are a friendly assistant answering questions about someone's personal food journal app called Bite Book. You're talking to the signed-in user — refer to them as \"you.\"",
       `Today's date is ${context.today}.`,
-      'Below is their journal data as JSON — each object is one meal they logged.',
-      '"status" is "draft" or "complete" (drafts may be missing fields). "rating" is 1-5 stars, their own opinion.',
+      'Below is the journal data visible to this user, as JSON — one object per meal.',
+      '"status" is "draft" or "complete" (drafts may be missing fields). "rating" is 1-5 stars — that entry\'s owner\'s own opinion, not necessarily the current user\'s.',
+      '"owner" is "me" for an entry the current user logged themselves, or another person\'s name if it\'s an entry someone shared with the current user. For a shared entry, the current user may or may not have actually been there — don\'t assume "I" in a question refers to the shared entry\'s owner. Attribute shared entries to the right person (e.g. "That one was [Name]\'s — they had...") rather than presenting it as the current user\'s own meal, unless the entry\'s own details (like who they ate with) show the current user was actually part of it.',
       '',
       JSON.stringify(context.entries),
       '',
@@ -303,7 +314,10 @@ const BiteBookAI = (() => {
       return 'Hit the free rate limit — wait a minute and try again.';
     }
     if (err && err.code === 'NETWORK') {
-      return "Couldn't reach the AI — check your connection and try again.";
+      return `Couldn't reach the AI. ${(err.message || '').replace('Could not reach the AI proxy — ', '') || 'Check your connection and try again.'}`;
+    }
+    if (err && err.code === 'API_ERROR') {
+      return `The AI proxy hit an error: ${err.message || 'unknown'}.`;
     }
     return "Something went wrong — try rephrasing, or try again in a moment.";
   }

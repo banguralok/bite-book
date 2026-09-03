@@ -5,9 +5,13 @@ function buildSiteHeader() {
   const signOutLink = (typeof signOut !== 'undefined')
     ? `<a href="#" id="nav-sign-out" title="Sign out">🚪</a>`
     : '';
+  // On a gated page we're already signed in, so send the brand link
+  // straight to My Entries — landing on index.html here would just
+  // flash the marketing page before its own session check bounces back.
+  const brandHref = (typeof requireAuth !== 'undefined') ? 'entries.html' : 'index.html';
 
   return `
-    <a class="brand" href="index.html">
+    <a class="brand" href="${brandHref}">
       <img class="brand-icon" src="icons/header-icon.png" alt="Bite Book"> Bite Book
     </a>
     <nav class="nav-links">

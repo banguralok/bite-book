@@ -27,8 +27,15 @@ document.addEventListener('bitebook:ready', () => {
   }
 
   async function buildJournalContext() {
-    const allEntries = await BiteBookStorage.listEntries();
+    const [allEntries, myId, directory] = await Promise.all([
+      BiteBookStorage.listEntries(),
+      BiteBookStorage.getCurrentUserId(),
+      BiteBookStorage.listDirectory(),
+    ]);
+    const namesById = new Map(directory.map((p) => [p.id, p.name || 'someone they know']));
+
     const entries = allEntries.map((e) => ({
+      owner: e.ownerId === myId ? 'me' : (namesById.get(e.ownerId) || 'someone else'),
       food: e.food,
       status: e.status,
       mealType: e.mealType,
