@@ -112,6 +112,9 @@ document.addEventListener('bitebook:ready', async () => {
     logItBtn.disabled = true;
     logItBtn.textContent = '⚡ Logging...';
     await BiteBookStorage.saveEntry(entry);
+    if (typeof BiteBookTrack !== 'undefined') {
+      BiteBookTrack.event('entry_created', { via: 'quick_log' });
+    }
     savedToast.classList.add('visible');
     setTimeout(() => {
       window.location.href = 'entries.html';

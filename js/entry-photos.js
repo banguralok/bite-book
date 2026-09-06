@@ -255,6 +255,9 @@ document.addEventListener('bitebook:ready', async () => {
 
   continueBtn.addEventListener('click', async () => {
     await saveNow({ status: 'complete' });
+    if (typeof BiteBookTrack !== 'undefined') {
+      BiteBookTrack.event('entry_created', { via: 'wizard' });
+    }
     savedToast.classList.add('visible');
     continueBtn.disabled = true;
     setTimeout(() => {

@@ -284,6 +284,9 @@ document.addEventListener('bitebook:ready', () => {
     confirmBtn.textContent = 'Saving...';
     const finished = { ...pendingEntry, status: 'complete', updatedAt: new Date().toISOString() };
     await BiteBookStorage.saveEntry(finished);
+    if (typeof BiteBookTrack !== 'undefined') {
+      BiteBookTrack.event('entry_created', { via: 'smart_entry' });
+    }
     window.location.href = `entry-view.html?id=${encodeURIComponent(pendingEntry.id)}`;
   });
 
@@ -297,4 +300,79 @@ document.addEventListener('bitebook:ready', () => {
       submitBtn.click();
     }
   });
+
+  // Voice capture. Dictation goes straight into the description box and the
+  // normal "Fill It In For Me" flow then runs completely unchanged — this is
+  // a shortcut to the same text, not a second way of creating an entry.
+  // Feature-detected: the button stays hidden where the browser has no Web
+  // Speech support, notably iOS Safari, where the keyboard's own mic key
+  // already does this job.
+  const micWrap = document.getElementById('smart-entry-mic-wrap');
+  const micBtn = document.getElementById('smart-entry-mic-btn');
+  const micStatus = document.getElementById('smart-entry-mic-status');
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  if (micWrap && micBtn && micStatus && SpeechRec) {
+    micWrap.style.display = '';
+    let recognition = null;
+    let listening = false;
+
+    const setIdle = (message) => {
+      listening = false;
+      micBtn.textContent = '🎙 Say It Instead';
+      micStatus.textContent = message || '';
+    };
+
+    micBtn.addEventListener('click', () => {
+      if (listening && recognition) {
+        recognition.stop();
+        return;
+      }
+
+      recognition = new SpeechRec();
+      recognition.lang = navigator.language || 'en-US';
+      recognition.interimResults = true;
+      recognition.continuous = true;
+
+      // Whatever is already typed stays put; speech is appended to it.
+      const base = textInput.value.trim();
+      let finalText = '';
+
+      recognition.onstart = () => {
+        listening = true;
+        micBtn.textContent = '⏹ Stop';
+        micStatus.textContent = 'Listening — say what you ate, who you were with, and why it mattered.';
+      };
+
+      recognition.onresult = (e) => {
+        let interim = '';
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const chunk = e.results[i][0].transcript;
+          if (e.results[i].isFinal) finalText += chunk;
+          else interim += chunk;
+        }
+        const spoken = (finalText + interim).trim();
+        textInput.value = [base, spoken].filter(Boolean).join(' ');
+        updateButtonState();
+      };
+
+      recognition.onerror = (e) => {
+        const blocked = e && (e.error === 'not-allowed' || e.error === 'service-not-allowed');
+        setIdle(blocked
+          ? 'Microphone access was blocked — you can still type it.'
+          : 'Did not catch that. Try again, or just type it.');
+      };
+
+      recognition.onend = () => {
+        setIdle(textInput.value.trim() ? 'Got it — edit anything, then fill it in.' : '');
+        updateButtonState();
+      };
+
+      try {
+        recognition.start();
+      } catch (err) {
+        setIdle('Could not start the microphone — you can still type it.');
+      }
+    });
+  }
 });

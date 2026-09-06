@@ -177,7 +177,7 @@ function shareEntryAsImage(entry) {
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
-  const drawPhotoAndText = (photoImg) => {
+  const drawPhotoAndText = (photoImg, isRetry) => {
     const padding = 50;
     let y = padding;
 
@@ -238,26 +238,76 @@ function shareEntryAsImage(entry) {
     ctx.fillStyle = '#f0672c';
     ctx.fillText('🍜 Bite Book', padding, H - 40);
 
-    canvas.toBlob((blob) => {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${(entry.food || 'bite-book-entry').replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 'image/png');
+    exportCanvas(isRetry);
   };
+
+  // A photo served from private storage taints the canvas if its CORS
+  // headers don't come back as expected, and toBlob then throws instead of
+  // producing an image. Rather than leave the button doing nothing, redraw
+  // the card without the photo and share that — a card with no picture beats
+  // a share button that silently fails.
+  function exportCanvas(alreadyRetried) {
+    try {
+      canvas.toBlob(handleBlob, 'image/png');
+    } catch (err) {
+      if (alreadyRetried) return;
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, W, H);
+      drawPhotoAndText(null, true);
+    }
+  }
+
+  async function handleBlob(blob) {
+    if (!blob) return;
+    const filename = `${(entry.food || 'bite-book-entry').replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.png`;
+
+    // On a phone, hand the card straight to the OS share sheet — Instagram,
+    // WhatsApp and Messages are all targets there. Desktop browsers and
+    // anything that can't share a file fall back to a plain download.
+    const file = (typeof File !== 'undefined')
+      ? new File([blob], filename, { type: 'image/png' })
+      : null;
+
+    if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: entry.food || 'Bite Book',
+          text: `${entry.food || 'A meal'} — from my Bite Book`,
+        });
+        if (typeof BiteBookTrack !== 'undefined') {
+          BiteBookTrack.event('entry_shared', { via: 'share_sheet' });
+        }
+        return;
+      } catch (err) {
+        // The share sheet was dismissed — that's a decision, not a failure.
+        if (err && err.name === 'AbortError') return;
+        // Anything else: fall through and download instead.
+      }
+    }
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    if (typeof BiteBookTrack !== 'undefined') {
+      BiteBookTrack.event('entry_shared', { via: 'download' });
+    }
+  }
 
   if (entry.photos && entry.photos[0]) {
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    img.onload = () => drawPhotoAndText(img);
-    img.onerror = () => drawPhotoAndText(null);
+    img.onload = () => drawPhotoAndText(img, false);
+    img.onerror = () => drawPhotoAndText(null, false);
     img.src = entry.photos[0].url;
   } else {
-    drawPhotoAndText(null);
+    drawPhotoAndText(null, false);
   }
 }
 
