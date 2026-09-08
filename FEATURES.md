@@ -11,11 +11,12 @@ This document has two parts: a **Feature List** (what the app can do, at a glanc
 **Accounts & sharing**
 - Password-based sign-in and self-serve account creation
 - Every user gets their own private journal by default — nothing is visible to anyone else until explicitly shared
+- The landing page works correctly for everyone: logged-out visitors see the marketing pitch with a simple Sign In / Get Started nav; a signed-in visitor landing there (a bookmark, the logo, a shared link) sees the same page with its calls-to-action pointed at their journal instead — only a genuine invite/magic-link callback skips straight into the app
 - **Sharing**: pick anyone in your circle and share a single entry with them; shared entries show up in the recipient's My Entries, tagged with who shared them, and can't be edited or deleted by anyone but the original owner
 - **Cross-user duplicate detection**: if two people in the same circle log what looks like the same real-world meal (matching place, date, and — when available — location), both get notified. The earlier-logged entry is treated as the record; the other person is asked whether to remove theirs, with a clear warning that their own rating/reflection/photos on that entry are theirs alone and won't be merged. Removing an entry that wasn't already shared automatically grants the remover access to the surviving one, so agreeing "yes, that's a duplicate" never costs someone their only record of the memory. A lighter, informational notification fires separately if the entry being kept turns out to be missing details (photos, ingredients) the removed one had.
 
 **Logging a meal**
-- **Smart Entry** (the default way to log something): describe a meal in a sentence and/or attach a photo, optionally tag your current location, and AI fills in as much of the full form as it can. A confirmation card shows what was understood right there on the page — one tap saves it as a finished entry, or you can drop into the full form to fine-tune anything first
+- **Smart Entry** (the default way to log something): describe a meal in a sentence — typed or dictated (🎙 voice capture, where the browser supports it) — and/or attach a photo, optionally tag your current location, and AI fills in as much of the full form as it can. A confirmation card shows what was understood right there on the page — one tap saves it as a finished entry, or you can drop into the full form to fine-tune anything first
 - Quick Log: a one-field fast-capture path for when you don't want to type a sentence or wait on AI — auto-fills date/time/place/maker from the clock and your location, no network dependency
 - The full 9-step guided wizard is still there as a fallback for anyone who'd rather fill in every field by hand
 - Autosave on every field, with resumable drafts and a step-navigator to jump directly to any step while editing, instead of clicking through all 9
@@ -30,7 +31,7 @@ This document has two parts: a **Feature List** (what the app can do, at a glanc
 - Draft entries resume at the correct wizard step automatically
 - Delete with a 6-second undo window (only available on entries you own)
 - "Log This Again" — duplicate a past entry's core details into a fresh draft
-- Read-only "story view" for each completed entry, with per-section edit links (hidden on entries shared with you, since you can't edit someone else's entry) and a "share as image" export
+- Read-only "story view" for each completed entry, with per-section edit links (hidden on entries shared with you, since you can't edit someone else's entry) and a share action that hands the entry, rendered as a card, straight to your device's share sheet (Instagram, WhatsApp, Messages) where supported — otherwise downloads it as a PNG
 - **Trips**: group entries into their own story — create a trip, add existing entries to it, see a small stats strip (meal count, distinct places, date range, top cuisine)
 
 **Insights**
@@ -46,6 +47,7 @@ This document has two parts: a **Feature List** (what the app can do, at a glanc
 **Data safety**
 - Export your full journal (entries + profile) as a JSON backup file, anytime
 - Import a JSON backup to restore or merge entries
+- Minimal, privacy-conscious usage analytics (session starts, page views, entry creation) — never the content of an entry, and scoped so anyone can only ever read their own activity, same as everything else
 
 **Platform**
 - Installable as a Progressive Web App (real app icon and logo, home-screen icon, offline-capable shell)
@@ -69,7 +71,10 @@ Runs client-side whenever My Entries loads: your own complete entries are checke
 Same 9 steps as before (What → When → Where → Who → Made By → Why → Ingredients → Loved It → Photos), each with autosave and a "Finish Later" exit. New: a step-navigator bar (visible whenever editing an existing entry) lets you jump directly to any step instead of clicking Continue through all nine. Data now lives in Supabase — photos/videos upload to a private Storage bucket and are served via short-lived signed URLs, never a public link.
 
 ### Smart Entry — [smart-entry.html](smart-entry.html)
-The default way to start a new entry (linked from the header's "New Entry" button, the landing page, and the empty-entries state). Describe a meal in a sentence and/or attach a photo; a "📍 Tag My Location" button optionally captures GPS + reverse-geocoded place details as a fallback for whatever the description didn't cover. AI (Gemini, via a shared server-side proxy — no per-user API key needed) parses the input into a structured entry. Instead of always routing into the full wizard "to review," a confirmation card appears right there showing what was understood; "✅ Looks Good — Save" marks the entry complete and goes straight to its finished story, or "✏️ Let Me Fine-Tune This" drops into the familiar wizard for anyone who wants to adjust something first.
+The default way to start a new entry (linked from the header's "New Entry" button, the landing page, and the empty-entries state). Describe a meal in a sentence — typed, or dictated via a "🎙 Say It Instead" button where the browser's Web Speech API is available (feature-detected; the button stays hidden on browsers without it, notably iOS Safari, which already has a mic key on its own keyboard) — and/or attach a photo; a "📍 Tag My Location" button optionally captures GPS + reverse-geocoded place details as a fallback for whatever the description didn't cover. AI (Gemini, via a shared server-side proxy — no per-user API key needed) parses the input into a structured entry. Instead of always routing into the full wizard "to review," a confirmation card appears right there showing what was understood; "✅ Looks Good — Save" marks the entry complete and goes straight to its finished story, or "✏️ Let Me Fine-Tune This" drops into the familiar wizard for anyone who wants to adjust something first.
+
+### Story View — [entry-view.html](entry-view.html)
+Read-only narrative page for one completed entry: hero photo, title, and conditionally-rendered sections (place, company, maker, occasion, ingredients, what-you-loved, reflection, extra photos, videos), each with its own edit-pencil link back to the relevant wizard step — omitted entirely when the entry isn't yours. Owners also get a "Share with..." panel (see Sharing, above). The "📤 Share" action renders the entry onto a canvas (photo, title, key facts, a reflection quote, watermark) and hands it to the device's native share sheet when available — Instagram, WhatsApp, Messages, anything registered as a share target — falling back to a plain PNG download when it isn't, or if a private-storage photo taints the canvas and the share sheet path fails (retried once, without the photo, rather than failing silently).
 
 ### My Entries — [entries.html](entries.html)
 Live search and status filtering across everything visible to you (owned + shared). An **On This Day** card above the list surfaces a past entry matching today's date from a prior year. A dismissible banner (free, instant, client-side — no AI call) appears only when likely duplicate place names are found among your own entries, linking to Clean Up Places. Entries shared with you show a "shared by" tag and have no delete button. Export/Import, Smart Search, and Log This Again all work as before.
@@ -96,13 +101,19 @@ Name, avatar, password, home address (with "use my current location"), birthday/
 Currently used for cross-user duplicate-entry resolution (see above); a 🔔 badge in the header shows the pending count. Built to extend to other notification types later.
 
 ### Landing Page — [index.html](index.html)
-Hero with a "Start My First Entry" call to action (into Smart Entry), a before/after section showing a plain photo-and-caption turning into a warm "scrapbook card" record, a 3-step "how it works" explainer, and a preview of everything an entry can capture.
+Hero with a "Start My First Entry" call to action (into Smart Entry), a before/after section showing a plain photo-and-caption turning into a warm "scrapbook card" record, a 3-step "how it works" explainer, and a preview of everything an entry can capture. `js/index-gate.js` only redirects away from this page on a genuine auth callback (an invite/magic-link/confirmation arriving with the right hash or query params) — an ordinary visit while signed in (a bookmark, the logo, a shared link) keeps the landing page and simply retargets its calls-to-action at the journal ("🍽️ Open My Journal") or profile setup ("👋 Finish Setting Up"), whichever applies.
+
+### Header — [js/partials.js](js/partials.js)
+Built from the visitor's actual session on every page, not from whether that page happens to require login. Signed out: brand + a plain "Sign in / ✨ Get Started" — no links that would just bounce to a login wall. Signed in: the full app nav (My Entries, Quick Log, Full Form, New Entry, notifications bell with a pending-count badge, avatar, sign out).
 
 ### Progressive Web App
 [manifest.json](manifest.json) makes the site installable (real app icon, standalone window, portrait lock). [service-worker.js](service-worker.js) caches the app shell for offline use.
 
+### Product Analytics — `js/track.js`
+A minimal `events` table (user, event name, small JSON props, timestamp) records session starts, page views, and entry creation — fired on `bitebook:ready`, fire-and-forget, silently swallowed on failure so analytics can never break or slow a page. Deliberately never records entry content (no dish names, places, photos, reflections). RLS restricts every row to insert-and-read-your-own — nobody, including the person who wrote it, can read someone else's activity or edit their own history after the fact. `supabase/analytics.sql` holds the scorecard queries used to read it back.
+
 ### Data Safety
-Entries and photos live in Supabase, scoped to your account by Row Level Security — not "on your device" the way the original local-only version worked. **Export** (JSON download of every entry plus your profile) and **Import** (restore/merge from that file) remain as your own backup net, independent of the backend.
+Entries and photos live in Supabase, scoped to your account by Row Level Security — not "on your device" the way the original local-only version worked. **Export** (JSON download of every entry plus your profile) and **Import** (restore/merge from that file) remain as your own backup net, independent of the backend. The `supabase/` folder (schema + every migration) is blocked from being served (`_redirects`) — Netlify otherwise publishes the whole repo root, which would make the database's table shapes and security policies fetchable by anyone who guessed the path (RLS still would have protected the actual data either way, but there's no reason to hand out the blueprint).
 
 ---
 

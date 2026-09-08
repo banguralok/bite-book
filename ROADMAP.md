@@ -41,6 +41,16 @@ The pivot from local-only to a real backend. `f83b9fc`..`3f64143`.
 - **Bug fixes**: AI proxy CORS + real error surfacing, logo flash-redirect, Ask Your Journal shared-entry attribution (`c8421e4`)
 - **Self-signup**: password-based account creation replaces invite-by-email on the login page for the beta round (`eb44f9a`) — confirmed working end-to-end once "Confirm email" was turned off in Supabase Auth settings
 - **FEATURES.md and VISION.md**: brought FEATURES.md up to date with the whole multi-user pivot (it had been stale since before it started); added VISION.md as a living statement of what Bite Book is for, to be refined alongside the roadmap
+- **Netlify credit cleanup**: removed a 1.2MB unreferenced logo-master file from the deployed site, added `robots.txt` (`181b3ae`) — turned out not to be the real cost driver (Netlify bills a flat rate per deploy, not by size or bandwidth), but still real dead weight worth removing
+
+### v2.3 — deployed 2026-09-07
+Built in a different session (Claude Opus 5) and reviewed/verified here before pushing. `dd54f8c`.
+- **Landing-page gating fix**: signed-in visitors were being bounced off `index.html` on *every* visit, not just when arriving from an actual invite/magic-link — it now only redirects on a genuine auth callback, and otherwise retargets the page's calls-to-action at the journal
+- **Header now branches on real session state**, not on whether a page happens to be gated — a logged-out visitor on the public landing page now sees a plain "Sign in / Get Started" nav instead of the full app nav (which only ever bounced them to a login wall)
+- **Native share sheet**: sharing an entry now hands the card straight to the OS share sheet (Instagram, WhatsApp, Messages) where supported, falling back to download — with a fix for the case where a private-storage photo taints the canvas
+- **Voice capture for Smart Entry**: dictate instead of type, where the browser supports the Web Speech API (feature-detected; hidden on browsers without it, notably iOS Safari, which has its own mic key). Feeds the same text box the existing AI-parse flow already used — not a second entry path
+- **Beta usage analytics**: a minimal `events` table + `js/track.js` (session starts, page views, entry creation — never entry content, RLS-scoped to insert/read-your-own) plus `supabase/analytics.sql` with scorecard queries. First real infrastructure for answering "are people actually coming back," see Proposed below
+- **Security fix**: `supabase/` (schema + every migration) was publicly fetchable because Netlify serves the whole repo root — blocked via `_redirects`
 
 ## On hold
 
@@ -50,6 +60,12 @@ The pivot from local-only to a real backend. `f83b9fc`..`3f64143`.
 
 ## Proposed — needs discussion before planning
 
+*The four items below came out of a 2026-09-08 VC-style evaluation of Bite Book's path to scale. Two things from that same conversation are deliberately **not** here: "target one obsessed group of families first" and "get 10 real families using it for 3 months" are go-to-market moves, not product features — no code fixes either one.*
+
+- 💡 **Trip Story sharing** — a shareable image/card for a whole trip (photo collage + place/date range + highlights), the same way a single entry already shares. Directly extends `shareEntryAsImage()` and the native share sheet shipped in v2.3 — no new mechanism needed, just a trip-level version of one that already works. Likely the next thing built, given how directly it serves "every share is a recruiting moment."
+- 💡 **Retention/analytics view** — v2.3's `events` table has the raw data (session starts, page views, entry creation) but nowhere to look at it. A simple view (day-7/day-30 return rate, a drop-off funnel by page) would turn that into the actual evidence a "people come back for months, not days" claim needs.
+- ❓ **Physical printed yearbook** — auto-compile a year's entries into a print-ready book. The product half (layout/compilation) is a normal feature; the commerce half (payment processing, a print-on-demand vendor, pricing, shipping/reprints) is a separate, much bigger decision that needs to be made explicitly before any code — this is not "add a feature" in the same sense as the rest of this list.
+- 💡 **Deeper "irreplaceable" mechanics** — On This Day, Trips, and the Rankings collections already lean this direction; a "Year in Review" recap once a family has a full year logged would be a natural, incremental extension rather than a new feature.
 - 💡 **Roles (admin / general / power user)** — access-control change, needs the exact admin-visibility boundary and promotion threshold agreed before it's planned. Starting proposal on the table: `profiles.role`, admin sees aggregates only (never another person's private text), power-user promotion at ~30 complete entries or 21 distinct days logged.
 - 💡 **Icon/graphic overhaul** — emoji icons read as generic next to the new logo. Scope decision needed: full custom icon set vs. a targeted pass on the highest-visibility spots.
 - 💡 **Admin knowledge graph** of users' food journeys (special days vs. everyday, travel patterns, grouped/linked) — needs a decision on what "see it" actually means (a page of grouped insights vs. an actual graph visualization) before a data model can be designed.
