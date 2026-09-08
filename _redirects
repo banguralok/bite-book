@@ -4,4 +4,8 @@
 # access, but there is no reason to hand out the table shapes and security
 # policies to anyone who guesses the path. robots.txt only asks crawlers not
 # to look; this actually refuses.
-/supabase/*    /index.html   404
+# The trailing "!" is load-bearing. Netlify only consults these rules when
+# NO file exists at the requested path, so an unforced rule never fires for
+# a real file like supabase/analytics.sql -- which is exactly the case we
+# are trying to block. "404!" forces the rule to win over the static file.
+/supabase/*    /index.html   404!
