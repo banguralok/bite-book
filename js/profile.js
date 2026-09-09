@@ -23,24 +23,41 @@ const BiteBookProfile = (() => {
       .eq('id', userId)
       .single();
 
-    // One extra read of a one-row table. `admins` has a SELECT policy and
-    // nothing else, so this can only ever answer "are you one" — it is not a
-    // place a person can write themselves into. See migration 006.
+    // Who am I allowed to be: admin flag and plan, in one call
+    // (migration 009). Neither is a column on `profiles` — the profiles
+    // policy is "owner has full access", so either one would be writable by
+    // any signed-in person from their own browser console. Both live in
+    // tables a person can only read.
+    //
+    // If 009 hasn't been run yet, fall back to the admin check alone so the
+    // Insights link doesn't vanish; everyone is simply 'general', which is
+    // the default anyway and gates nothing while enforcement is off.
     let isAdmin = false;
+    let role = 'general';
     try {
-      const { data: adminRow } = await supabaseClient
-        .from('admins')
-        .select('user_id')
-        .eq('user_id', userId)
-        .maybeSingle();
-      isAdmin = !!adminRow;
+      const { data: access, error: accessError } = await supabaseClient.rpc('bb_my_access');
+      if (accessError) throw accessError;
+      const row = Array.isArray(access) ? access[0] : access;
+      isAdmin = !!(row && row.is_admin);
+      role = (row && row.role) || 'general';
     } catch (err) {
-      isAdmin = false;
+      try {
+        const { data: adminRow } = await supabaseClient
+          .from('admins')
+          .select('user_id')
+          .eq('user_id', userId)
+          .maybeSingle();
+        isAdmin = !!adminRow;
+      } catch (err2) {
+        isAdmin = false;
+      }
     }
+    if (typeof BiteBookRoles !== 'undefined') BiteBookRoles.set(role, isAdmin);
 
     cached = (error || !data) ? null : {
       id: userId,
       isAdmin,
+      role,
       name: data.name,
       avatar: data.avatar,
       birthday: data.birthday,
@@ -82,7 +99,8 @@ const BiteBookProfile = (() => {
       // isAdmin is never part of what gets saved — it is not a profile column
       // at all — so carry the loaded value forward rather than losing it.
       const wasAdmin = cached ? cached.isAdmin : false;
-      cached = { ...profile, isAdmin: wasAdmin, updatedAt: nowIso, email: sessionData.session.user.email };
+      const wasRole = cached ? cached.role : 'general';
+      cached = { ...profile, isAdmin: wasAdmin, role: wasRole, updatedAt: nowIso, email: sessionData.session.user.email };
     }
     return !error;
   }

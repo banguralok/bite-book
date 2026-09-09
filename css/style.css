@@ -2350,3 +2350,58 @@ textarea:focus-visible,
   font-weight: 600;
   color: var(--brown);
 }
+
+
+/* ---------- Plan strip (js/roles.js) ---------- */
+
+.plan-strip {
+  align-items: center;
+  gap: 14px;
+  background: var(--white);
+  border: 2px solid var(--cream-2);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  margin-bottom: 22px;
+}
+
+.plan-strip-icon {
+  display: flex;
+  color: var(--orange-dark);
+  flex-shrink: 0;
+}
+
+.plan-strip-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+.plan-strip-text strong {
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 600;
+  color: var(--brown);
+}
+
+.plan-strip-text span { font-size: 0.86rem; color: var(--brown-soft); }
+
+/* ---------- Admin role controls (insights.html) ---------- */
+
+.role-select {
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--brown);
+  background: var(--white);
+  border: 2px solid var(--cream-2);
+  border-radius: 999px;
+  padding: 5px 12px;
+  cursor: pointer;
+}
+
+.role-select:focus { outline: none; border-color: var(--orange); }
+.role-select:disabled { opacity: 0.55; cursor: default; }
+
+.role-admin-badge {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--orange-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}

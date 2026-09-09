@@ -121,6 +121,72 @@ document.addEventListener('bitebook:ready', async () => {
     ])
   );
 
+  // ---------- people and plans ----------
+  // Loaded separately from the six reports above: if migration 009 hasn't
+  // been run, this section says so on its own instead of taking the whole
+  // page down with it.
+  const rolesEl = document.getElementById('insights-roles');
+  const rolesStatus = document.getElementById('roles-status');
+
+  async function renderRoles() {
+    let rows;
+    try {
+      rows = await rpc('admin_list_roles');
+    } catch (err) {
+      rolesEl.innerHTML = '';
+      rolesStatus.textContent = `⚠️ Plans aren't set up yet — run supabase/migrations/009_roles.sql in the Supabase SQL editor. (${err.message || err})`;
+      rolesStatus.classList.add('error');
+      return;
+    }
+
+    if (!rows.length) {
+      rolesEl.innerHTML = `<tbody><tr><td class="insights-empty">Nobody has signed up yet.</td></tr></tbody>`;
+      return;
+    }
+
+    const head = `<thead><tr><th>Person</th><th>Joined</th><th>Entries</th><th>Plan</th></tr></thead>`;
+    const body = rows.map((r) => {
+      const name = r.name ? escapeHtmlInsights(r.name) : '(no name set)';
+      const admin = r.is_admin ? ' <span class="role-admin-badge">admin</span>' : '';
+      const options = [['general', 'Free'], ['power', 'Power']]
+        .map(([value, label]) => `<option value="${value}"${r.role === value ? ' selected' : ''}>${label}</option>`)
+        .join('');
+      return `<tr>
+        <td>${name}${admin}</td>
+        <td>${escapeHtmlInsights(dash(r.joined))}</td>
+        <td>${escapeHtmlInsights(r.entries)}</td>
+        <td><select class="role-select" data-user="${escapeHtmlInsights(r.user_id)}">${options}</select></td>
+      </tr>`;
+    }).join('');
+    rolesEl.innerHTML = `${head}<tbody>${body}</tbody>`;
+
+    rolesEl.querySelectorAll('.role-select').forEach((select) => {
+      const previous = select.value;
+      select.addEventListener('change', async () => {
+        select.disabled = true;
+        rolesStatus.classList.remove('error');
+        rolesStatus.textContent = 'Saving...';
+        const { error } = await supabaseClient.rpc('admin_set_role', {
+          target_user: select.dataset.user,
+          new_role: select.value,
+        });
+        select.disabled = false;
+        if (error) {
+          // Put the dropdown back where it was rather than leaving it
+          // showing a plan that was never saved.
+          select.value = previous;
+          rolesStatus.textContent = `⚠️ Couldn't change that: ${error.message || error}`;
+          rolesStatus.classList.add('error');
+          return;
+        }
+        rolesStatus.textContent = '✅ Saved.';
+        await renderRoles();
+      });
+    });
+  }
+
+  renderRoles();
+
   // ---------- weekly ----------
   document.getElementById('insights-weekly').innerHTML = table(
     ['Week beginning', 'People who opened it', 'Sessions', 'Entries created'],

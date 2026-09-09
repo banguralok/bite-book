@@ -17,6 +17,11 @@ function section(icon, label, innerHtml, editHref) {
 }
 
 function buildSharePanelHtml(directory, shareUserIds) {
+  const blocked = (typeof BiteBookRoles !== 'undefined')
+    ? BiteBookRoles.blockedReason('share-entry') : null;
+  if (blocked) {
+    return `<p class="field-sublabel">${escapeHtmlView(blocked)}</p>`;
+  }
   if (!directory.length) {
     return `<p class="field-sublabel">No one in your family or friends list yet — add them from your Profile page first.</p>`;
   }

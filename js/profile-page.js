@@ -1,3 +1,29 @@
+// Shows which plan this account is on. While BiteBookRoles.ENFORCE is false
+// this is purely informational — nothing is switched off — so the copy says
+// what the plan IS rather than what a free account is missing. Selling
+// upgrades to a beta group of relatives would be a strange thing to do.
+function renderPlanStrip() {
+  const el = document.getElementById('plan-strip');
+  if (!el || typeof BiteBookRoles === 'undefined') return;
+
+  const plan = BiteBookRoles.plan();
+  const role = BiteBookRoles.get();
+  const icon = role === 'admin' ? 'chart' : (role === 'power' ? 'star' : 'person');
+
+  const note = BiteBookRoles.isEnforcing()
+    ? (BiteBookRoles.isPaid() ? '' : 'Sharing and family are part of the Power plan.')
+    : 'Everything is switched on for everyone during the beta.';
+
+  el.style.display = 'flex';
+  el.innerHTML = `
+    <span class="plan-strip-icon">${BiteBookIcons.svg(icon)}</span>
+    <span class="plan-strip-text">
+      <strong>${plan.label} plan</strong>
+      <span>${plan.blurb}${note ? ' · ' + note : ''}</span>
+    </span>
+  `;
+}
+
 document.addEventListener('bitebook:ready', () => {
   const nameInput = document.getElementById('profile-name');
   const avatarChips = document.querySelectorAll('#avatar-chips .chip');
@@ -150,6 +176,13 @@ document.addEventListener('bitebook:ready', () => {
   }
 
   addFamilyBtn.addEventListener('click', () => {
+    const why = (typeof BiteBookRoles !== 'undefined')
+      ? BiteBookRoles.blockedReason('family-members') : null;
+    if (why) {
+      const status = document.getElementById('plan-strip');
+      if (status) status.querySelector('.plan-strip-text span').textContent = why;
+      return;
+    }
     resetFamilyForm();
     familyForm.style.display = 'block';
     addFamilyBtn.style.display = 'none';
@@ -213,6 +246,7 @@ document.addEventListener('bitebook:ready', () => {
     if (profile.homeAddress) homeAddressInput.value = profile.homeAddress;
     if (profile.homeCoords) homeCoords = profile.homeCoords;
     if (profile.familyMembers) familyMembers = profile.familyMembers;
+    renderPlanStrip();
     renderFamilyList();
   }
 
