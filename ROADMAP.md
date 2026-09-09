@@ -20,10 +20,15 @@ Every one of these is run by hand in the Supabase SQL editor; nothing runs them 
 | `004_trips.sql` | Links entries to a trip | ✅ |
 | `005_events.sql` | The analytics `events` table | ✅ |
 | `006_admin_insights.sql` | `admins` table + six aggregate-only reporting functions | ✅ 2026-09-09 |
-| `007_count_trip_shares.sql` | Replaces `admin_funnel()` so trip shares count as shares | ❌ **not yet run** |
-| `008_wishlist.sql` | The "Want to Try" table | ❌ **not yet run** |
+| `007_count_trip_shares.sql` | Replaces `admin_funnel()` so trip shares count as shares | ✅ 2026-09-09 |
+| `008_wishlist.sql` | The "Want to Try" table | ✅ 2026-09-09 |
 
-A note for whoever runs the next one: the SQL editor reports **"0 rows"** after a successful `insert`, because an insert returns no rows. That is not a failure. Check the table itself, not the row count.
+A note for whoever runs the next one: **the SQL editor reports "0 rows" for almost everything in this list, and that is success, not failure.** An `insert` returns no rows; so does `create table`, `create function` and `create policy`. A real failure shows up as a red error message, not a row count. To confirm a table actually exists, list them:
+
+```sql
+select table_name from information_schema.tables
+where table_schema = 'public' order by table_name;
+```
 
 ## Version history
 
@@ -79,7 +84,7 @@ Ordered cheapest-to-build first, deliberately. The gender/ethnicity profile fiel
 
 **Database side: done, 2026-09-09.** Migration `006_admin_insights.sql` has been run in the Supabase SQL editor and the owner's row is in `public.admins`. Worth recording for the next person who runs an insert here: the SQL editor reports "0 rows" for a successful `insert`, because an insert returns no rows — it is not a failure signal. Check the table, not the row count.
 
-**One follow-up migration, `007_count_trip_shares.sql` — needs running.** Trip Story sharing logs a `trip_shared` event, but `admin_funnel()` was written before that existed and counted only `entry_shared`, so anyone who shared a whole trip and never a single meal was invisible at exactly the step the funnel measures. 007 replaces that one function; it drops nothing and changes no data, and is safe to run twice. Found during the doc audit, not by the tests — the tests exercised the code, and this was a gap between two pieces of correct code.
+**Follow-up migration `007_count_trip_shares.sql` — run 2026-09-09.** Trip Story sharing logs a `trip_shared` event, but `admin_funnel()` was written before that existed and counted only `entry_shared`, so anyone who shared a whole trip and never a single meal was invisible at exactly the step the funnel measures. 007 replaces that one function; it drops nothing and changes no data, and is safe to run twice. Found during the doc audit, not by the tests — the tests exercised the code, and this was a gap between two pieces of correct code.
 
 **Still to do:** push `multiuser-edition` so Netlify rebuilds. Four commits are unpushed as of writing. Nothing in v2.4 is on the live site until that happens.
 
