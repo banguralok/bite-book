@@ -11,6 +11,10 @@
 // being part of the page rather than pretending to be a notification.
 const BiteBookOccasions = (() => {
   const LOOKAHEAD_DAYS = 14;
+  // A roster of eight family members, each with a birthday and an
+  // anniversary, could put a dozen cards above the entries list. Three is a
+  // reminder; a dozen is a wall someone scrolls past.
+  const MAX_CARDS = 3;
   const DISMISSED_KEY = 'bitebook:occasionsDismissed';
 
   function getDismissed() {
@@ -115,7 +119,7 @@ const BiteBookOccasions = (() => {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    const upcoming = findUpcoming(profile, entries);
+    const upcoming = findUpcoming(profile, entries).slice(0, MAX_CARDS);
     if (upcoming.length === 0) {
       container.style.display = 'none';
       container.innerHTML = '';
@@ -141,7 +145,7 @@ const BiteBookOccasions = (() => {
         <div class="on-this-day-card">
           ${thumb}
           <div class="on-this-day-info">
-            <span class="on-this-day-label">${o.icon} ${escapeHtmlOccasion(whenLabel(o.daysAway))}</span>
+            <span class="on-this-day-label">${escapeHtmlOccasion(whenLabel(o.daysAway))}</span>
             <strong>${escapeHtmlOccasion(o.label)}</strong>
             <span class="on-this-day-meta">${escapeHtmlOccasion(meta)}</span>
           </div>

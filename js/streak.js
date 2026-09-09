@@ -118,7 +118,6 @@ const BiteBookStreak = (() => {
       };
     }
 
-    const dayWord = streak.current === 1 ? 'day' : 'days';
     const sub = streak.loggedToday
       ? (nextMilestone(streak.current)
         ? `${nextMilestone(streak.current).days - streak.current} more ${nextMilestone(streak.current).days - streak.current === 1 ? 'day' : 'days'} to "${nextMilestone(streak.current).name}".`
@@ -127,7 +126,9 @@ const BiteBookStreak = (() => {
 
     return {
       icon: milestone ? milestone.icon : '🔥',
-      title: `${streak.current}-${dayWord} streak${milestone ? ` · ${milestone.name}` : ''}`,
+      // "3-day streak", never "3-days streak" — the number and the noun form
+      // a compound adjective here, so the noun stays singular.
+      title: `${streak.current}-day streak${milestone ? ` · ${milestone.name}` : ''}`,
       sub,
     };
   }

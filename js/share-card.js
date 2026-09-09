@@ -126,12 +126,31 @@ const BiteBookShare = (() => {
     }
   }
 
-  // draw(ctx, images) paints one complete card. Called a second time with an
-  // empty image list if the first canvas came out tainted.
+  // Finds where the text block should start when there is no photo to anchor
+  // the top of the card. Draws the card once on a throwaway canvas with text
+  // output disabled, purely to learn how tall it comes out, then centres that
+  // height in the space above the footer. Without this, a card whose photo is
+  // missing (or failed to load) leaves the bottom two thirds empty and reads
+  // as broken rather than minimal.
+  function centredStart(draw) {
+    const scratch = document.createElement('canvas');
+    scratch.width = W;
+    scratch.height = H;
+    const c = scratch.getContext('2d');
+    c.fillText = () => {};
+    const contentHeight = draw(c, [], PAD) - PAD;
+    const available = (H - 110) - PAD;
+    return Math.max(PAD, PAD + Math.round((available - contentHeight) / 2));
+  }
+
+  // draw(ctx, images, startY) paints one complete card and returns the y it
+  // finished at. Called a second time with an empty image list if the first
+  // canvas came out tainted.
   function render(draw, images, filename, title, text, eventName) {
     const attempt = (imgs, isRetry) => {
+      const startY = imgs.length ? PAD : centredStart(draw);
       const { canvas, ctx } = makeContext();
-      draw(ctx, imgs);
+      draw(ctx, imgs, startY);
       try {
         canvas.toBlob((blob) => deliver(blob, filename, title, text, eventName), 'image/png');
       } catch (err) {
@@ -151,8 +170,8 @@ const BiteBookShare = (() => {
   // ---------- one entry ----------
 
   function drawEntryCard(entry) {
-    return (ctx, images) => {
-      let y = PAD;
+    return (ctx, images, startY) => {
+      let y = startY;
       const photo = images[0];
 
       if (photo) {
@@ -189,10 +208,11 @@ const BiteBookShare = (() => {
         y += 20;
         ctx.font = 'italic 400 26px Georgia, serif';
         ctx.fillStyle = INK;
-        wrapText(ctx, `"${entry.reflection}"`, PAD, y, W - PAD * 2, 36);
+        y = wrapText(ctx, `"${entry.reflection}"`, PAD, y, W - PAD * 2, 36);
       }
 
       drawFooter(ctx);
+      return y;
     };
   }
 
@@ -277,8 +297,8 @@ const BiteBookShare = (() => {
 
   function drawTripCard(trip, entries) {
     const facts = tripFacts(entries);
-    return (ctx, images) => {
-      let y = PAD;
+    return (ctx, images, startY) => {
+      let y = startY;
 
       if (images.length) {
         const collageH = 460;
@@ -320,6 +340,7 @@ const BiteBookShare = (() => {
       });
 
       drawFooter(ctx);
+      return y;
     };
   }
 
