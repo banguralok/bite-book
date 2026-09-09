@@ -21,6 +21,7 @@ document.addEventListener('bitebook:ready', async () => {
   const addListEl = document.getElementById('add-entries-list');
   const addEmptyEl = document.getElementById('add-entries-empty');
   const deleteBtn = document.getElementById('delete-trip-btn');
+  const shareTripBtn = document.getElementById('share-trip-btn');
 
   const myId = await BiteBookStorage.getCurrentUserId();
   const trip = await BiteBookStorage.getTrip(tripId);
@@ -28,7 +29,7 @@ document.addEventListener('bitebook:ready', async () => {
     window.location.href = 'trips.html';
     return;
   }
-  tripNameEl.textContent = `✈️ ${trip.name}`;
+  tripNameEl.textContent = trip.name;
 
   let allEntries = [];
 
@@ -121,12 +122,36 @@ document.addEventListener('bitebook:ready', async () => {
     allEntries = (await BiteBookStorage.listEntries()).filter((e) => e.ownerId === myId);
     renderStats();
     renderTripEntries();
+    // An empty trip has no story to share yet, so the button says so by
+    // being unavailable rather than by producing a card with nothing on it.
+    shareTripBtn.disabled = tripEntries().length === 0;
+    shareTripBtn.title = shareTripBtn.disabled
+      ? 'Add a few entries first — then this trip has a story to share'
+      : 'Share this whole trip as one card';
   }
 
   addToggle.addEventListener('click', () => {
     const isOpen = addWrap.style.display !== 'none';
     addWrap.style.display = isOpen ? 'none' : 'block';
     if (!isOpen) renderAddList();
+  });
+
+  shareTripBtn.addEventListener('click', async () => {
+    const entries = tripEntries();
+    if (entries.length === 0) return;
+    shareTripBtn.disabled = true;
+    // innerHTML, not textContent — the button holds a drawn icon, and
+    // textContent would quietly delete it.
+    const label = shareTripBtn.innerHTML;
+    shareTripBtn.textContent = 'Preparing...';
+    try {
+      await BiteBookShare.shareTrip(trip, entries);
+    } finally {
+      setTimeout(() => {
+        shareTripBtn.innerHTML = label;
+        shareTripBtn.disabled = false;
+      }, 1200);
+    }
   });
 
   deleteBtn.addEventListener('click', async () => {

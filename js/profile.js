@@ -23,8 +23,24 @@ const BiteBookProfile = (() => {
       .eq('id', userId)
       .single();
 
+    // One extra read of a one-row table. `admins` has a SELECT policy and
+    // nothing else, so this can only ever answer "are you one" — it is not a
+    // place a person can write themselves into. See migration 006.
+    let isAdmin = false;
+    try {
+      const { data: adminRow } = await supabaseClient
+        .from('admins')
+        .select('user_id')
+        .eq('user_id', userId)
+        .maybeSingle();
+      isAdmin = !!adminRow;
+    } catch (err) {
+      isAdmin = false;
+    }
+
     cached = (error || !data) ? null : {
       id: userId,
+      isAdmin,
       name: data.name,
       avatar: data.avatar,
       birthday: data.birthday,
@@ -63,7 +79,10 @@ const BiteBookProfile = (() => {
       .eq('id', userId);
 
     if (!error) {
-      cached = { ...profile, updatedAt: nowIso, email: sessionData.session.user.email };
+      // isAdmin is never part of what gets saved — it is not a profile column
+      // at all — so carry the loaded value forward rather than losing it.
+      const wasAdmin = cached ? cached.isAdmin : false;
+      cached = { ...profile, isAdmin: wasAdmin, updatedAt: nowIso, email: sessionData.session.user.email };
     }
     return !error;
   }

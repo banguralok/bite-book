@@ -20,7 +20,7 @@ function buildSiteHeader(isSignedIn) {
       ${brand}
       <nav class="nav-links">
         <a href="login.html">Sign in</a>
-        <a class="nav-cta" href="login.html?redirect=${encodeURIComponent('smart-entry.html')}">✨ Get Started</a>
+        <a class="nav-cta" href="login.html?redirect=${encodeURIComponent('smart-entry.html')}">${BiteBookIcons.svg('sparkle')} Get Started</a>
       </nav>
     `;
   }
@@ -28,17 +28,23 @@ function buildSiteHeader(isSignedIn) {
   const profile = (typeof BiteBookProfile !== 'undefined') ? BiteBookProfile.get() : null;
   const avatar = (profile && profile.avatar) || '👤';
   const profileLabel = (profile && profile.name) ? profile.name : 'Profile';
+  // Shown only to an admin. The page itself is protected by the database,
+  // not by this link being absent — hiding it just keeps the nav honest.
+  const insightsLink = (profile && profile.isAdmin)
+    ? `<a href="insights.html" class="nav-quick">${BiteBookIcons.svg('chart')} Insights</a>`
+    : '';
 
   return `
     ${brand}
     <nav class="nav-links">
-      <a href="entries.html">My Entries</a>
-      <a href="quick-log.html" class="nav-quick">⚡ Quick Log</a>
-      <a href="entry.html" class="nav-quick">📝 Full Form</a>
-      <a class="nav-cta" href="smart-entry.html">✨ New Entry</a>
-      <a href="notifications.html" class="nav-bell" id="nav-bell" title="Notifications">🔔<span class="nav-bell-badge" id="nav-bell-badge" style="display: none;"></span></a>
+      <a href="entries.html">${BiteBookIcons.svg('book')} My Entries</a>
+      <a href="quick-log.html" class="nav-quick">${BiteBookIcons.svg('bolt')} Quick Log</a>
+      <a href="entry.html" class="nav-quick">${BiteBookIcons.svg('form')} Full Form</a>
+      ${insightsLink}
+      <a class="nav-cta" href="smart-entry.html">${BiteBookIcons.svg('sparkle')} New Entry</a>
+      <a href="notifications.html" class="nav-bell" id="nav-bell" title="Notifications">${BiteBookIcons.svg('bell')}<span class="nav-bell-badge" id="nav-bell-badge" style="display: none;"></span></a>
       <a href="profile.html" class="nav-avatar" title="${profileLabel}">${avatar}</a>
-      <a href="#" id="nav-sign-out" title="Sign out">🚪</a>
+      <a href="#" id="nav-sign-out" title="Sign out">${BiteBookIcons.svg('exit')}</a>
     </nav>
   `;
 }

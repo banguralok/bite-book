@@ -167,6 +167,19 @@ document.addEventListener('bitebook:ready', async () => {
     allEntriesCache = await BiteBookStorage.listEntries();
     renderOnThisDay(allEntriesCache);
     renderDedupeBanner(allEntriesCache);
+
+    // Streaks and occasion reminders are about YOUR own logging, so entries
+    // someone else shared with you are deliberately left out of both.
+    const myEntries = allEntriesCache.filter((e) => e.ownerId === myId);
+    if (typeof BiteBookStreak !== 'undefined') {
+      BiteBookStreak.render(
+        'streak-strip',
+        myEntries.filter((e) => e.status === 'complete').map((e) => e.ateOn)
+      );
+    }
+    if (typeof BiteBookOccasions !== 'undefined') {
+      BiteBookOccasions.render('occasions', BiteBookProfile.get(), myEntries);
+    }
     if (typeof checkForCrossUserDuplicates === 'function') {
       checkForCrossUserDuplicates(allEntriesCache).catch(() => {});
     }

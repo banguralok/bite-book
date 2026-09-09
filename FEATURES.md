@@ -28,6 +28,8 @@ This document has two parts: a **Feature List** (what the app can do, at a glanc
 **Browsing & managing entries**
 - Searchable, filterable My Entries list, with entries you own and entries shared with you shown together (shared ones tagged with who shared them, and without a delete button, since only the owner can remove them)
 - **On This Day**: surfaces a past entry whose date matches today, from a prior year, right above the list
+- **Occasion reminders**: looks *forward* instead of back — any birthday or anniversary saved on your Profile (your own or a family member's) that falls in the next 14 days appears as a card, together with what you ate for it last time. Dismissible per occasion, and it comes back next year. In-app only: it can speak when you open Bite Book, not before
+- **Logging streaks**: consecutive days with a logged meal, with food-named milestones (Simmering at 3 days, On the Boil at 5, Full Course Week at 7, Head Chef Month at 30, and up). A streak counts the day the *meal* happened, so backfilling last night's dinner repairs the run; today never breaks a streak until midnight. Hitting a milestone for the first time raises a one-off toast
 - **Smart Search**: AI semantic search when a plain substring search comes up empty
 - **Clean Up Places**: runs automatically in the background (a free, instant, non-AI heuristic) and shows a dismissible banner only when it actually finds likely duplicate place names; the AI-powered deeper check is now an opt-in "trickier matches" button on the review page, for names the heuristic can't catch
 - Draft entries resume at the correct wizard step automatically
@@ -35,10 +37,12 @@ This document has two parts: a **Feature List** (what the app can do, at a glanc
 - "Log This Again" — duplicate a past entry's core details into a fresh draft
 - Read-only "story view" for each completed entry, with per-section edit links (hidden on entries shared with you, since you can't edit someone else's entry) and a share action that hands the entry, rendered as a card, straight to your device's share sheet (Instagram, WhatsApp, Messages) where supported — otherwise downloads it as a PNG
 - **Trips**: group entries into their own story — create a trip, add existing entries to it, see a small stats strip (meal count, distinct places, date range, top cuisine)
+- **Trip Story sharing**: share a whole trip as one card — a collage of up to four photos, the trip name, its date range, the meal and place counts, the dominant cuisine and the best-rated bite — through the same native share sheet a single entry already uses
 
 **Insights**
 - **Stats → "Your Food Story"**: leads with a few plain-language narrative observations computed from your own data (dominant cuisine, family-meal average rating, a "problem child" dish, your most-repeated place), with the original tiles and cuisine/meal-time/company/maker breakdowns below as supporting detail, plus on-demand **AI Insights**
 - **Rankings → collections**: auto-generated groupings (Hall of Fame, Most Loved, Family Favorites, Places Worth Returning To, Taste Evolution over time) lead the page; manual drag-free reordering is still there, tucked behind a "rank them yourself" toggle
+- **Admin Insights** (visible only to an admin): signups, entries, who opened the app in the last 7 and 30 days, day-7 and day-30 return rates, a drop-off funnel from "opened it" through "shared one", a week-by-week table, and a per-person row whose most important column is **days someone opened Bite Book and logged nothing** — that is a visit to remember rather than to maintain a list. Counts and dates only; no dish, note, place or photo is reachable through any of it
 - **Ask Your Journal**: a chat interface answering natural-language questions about everything visible to you — your own entries and anything shared with you — correctly attributing shared entries to whoever actually shared them, rather than assuming you were there
 
 **Personalization**
@@ -53,6 +57,7 @@ This document has two parts: a **Feature List** (what the app can do, at a glanc
 
 **Platform**
 - Installable as a Progressive Web App (real app icon and logo, home-screen icon, offline-capable shell)
+- Drawn outline icons (not emoji) in the header nav, the main action buttons and the empty states — emoji stay inside meal cards, story sections and streak badges, where they are part of the voice rather than placeholder furniture
 - Mobile-responsive layout throughout
 - Accessible chip/toggle controls (`aria-pressed`, labeled icon buttons, visible focus states)
 
@@ -79,10 +84,10 @@ The default way to start a new entry (linked from the header's "New Entry" butto
 Read-only narrative page for one completed entry: hero photo, title, and conditionally-rendered sections (place, company, maker, occasion, ingredients, what-you-loved, reflection, extra photos, videos), each with its own edit-pencil link back to the relevant wizard step — omitted entirely when the entry isn't yours. Owners also get a "Share with..." panel (see Sharing, above). The "📤 Share" action renders the entry onto a canvas (photo, title, key facts, a reflection quote, watermark) and hands it to the device's native share sheet when available — Instagram, WhatsApp, Messages, anything registered as a share target — falling back to a plain PNG download when it isn't, or if a private-storage photo taints the canvas and the share sheet path fails (retried once, without the photo, rather than failing silently).
 
 ### My Entries — [entries.html](entries.html)
-Live search and status filtering across everything visible to you (owned + shared). An **On This Day** card above the list surfaces a past entry matching today's date from a prior year. A dismissible banner (free, instant, client-side — no AI call) appears only when likely duplicate place names are found among your own entries, linking to Clean Up Places. Entries shared with you show a "shared by" tag and have no delete button. Export/Import, Smart Search, and Log This Again all work as before.
+Live search and status filtering across everything visible to you (owned + shared). A **streak strip** sits at the top (`js/streak.js`), then any **upcoming occasion** cards (`js/occasions.js`), then **On This Day**. Streaks and occasions both deliberately ignore entries other people shared with you — they are about your own logging. An **On This Day** card above the list surfaces a past entry matching today's date from a prior year. A dismissible banner (free, instant, client-side — no AI call) appears only when likely duplicate place names are found among your own entries, linking to Clean Up Places. Entries shared with you show a "shared by" tag and have no delete button. Export/Import, Smart Search, and Log This Again all work as before.
 
 ### Trips — [trips.html](trips.html) / [trip-view.html](trip-view.html)
-Create a trip, add any of your own complete entries to it, and see a small stats strip (meal count, distinct places, date range, top cuisine) plus the grouped entries themselves. Trips are owner-only for now — not yet shareable with others (a deliberate near-term limit, see `ROADMAP.md`).
+Create a trip, add any of your own complete entries to it, and see a small stats strip (meal count, distinct places, date range, top cuisine) plus the grouped entries themselves. **Share Trip Story** renders the whole trip as one card — a photo collage that adapts to however many pictures actually loaded (1, 2, 3 or 4 up), the trip name, date range, meal/place counts, dominant cuisine and best-rated bite — and hands it to the native share sheet, falling back to a PNG download. The button is unavailable until the trip has at least one entry, since an empty trip has no story. Trips are owner-only for now — not yet shareable with others (a deliberate near-term limit, see `ROADMAP.md`).
 
 ### Stats — [stats.html](stats.html)
 Leads with "Your Food Story": a handful of plain-language sentences computed from your own data (only the ones that actually qualify — no padding). Below that, the original tiles (totals, average rating, this month, top-rated dish) and ranked breakdowns (cuisines, meal times, company, cooks) remain as supporting detail, followed by on-demand **AI Insights**.
@@ -98,6 +103,9 @@ Runs the same free, instant heuristic used for the My Entries banner automatical
 
 ### Profile — [profile.html](profile.html)
 Name, avatar, password, home address (with "use my current location"), birthday/anniversary, and a family roster (relationship, optional name, optional birthday/anniversary) — used for home/restaurant detection, the family quick-picker, and birthday/anniversary auto-suggestions. The AI features no longer need a personal API key here — Gemini calls are proxied through a shared server-side key.
+
+### Insights — [insights.html](insights.html)
+Admin-only. Every number comes from a `security definer` function in `supabase/migrations/006_admin_insights.sql` that gates itself on `bb_is_admin()`, so a non-admin who types the URL gets empty results from the *database*, not merely a hidden page. Admin is a row in its own `admins` table rather than a column on `profiles` — the profiles policy is "owner has full access", so an `is_admin` column there could be flipped by any signed-in person from their own browser console; `admins` has a SELECT policy and nothing else, so you can learn whether you are one but cannot make yourself one. Granting admin is a one-line insert in the Supabase SQL editor (the migration carries the exact statement). The page shows headline tiles, day-7/day-30 return rates, a five-step drop-off funnel, a per-person table, a weekly table and a page-popularity table.
 
 ### Notifications — [notifications.html](notifications.html)
 Currently used for cross-user duplicate-entry resolution (see above); a 🔔 badge in the header shows the pending count. Built to extend to other notification types later.

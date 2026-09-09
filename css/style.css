@@ -1980,3 +1980,202 @@ textarea:focus-visible,
   .chat-input-row { flex-wrap: wrap; }
   .chat-input-row .text-input { flex-basis: 100%; }
 }
+
+
+/* ---------- Upcoming occasions (js/occasions.js) ---------- */
+
+.on-this-day-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ---------- Logging streak (js/streak.js) ---------- */
+
+.streak-strip {
+  align-items: center;
+  gap: 14px;
+  background: linear-gradient(135deg, var(--cream), var(--cream-2));
+  border: 2px dashed var(--orange);
+  border-radius: var(--radius-md);
+  padding: 12px 18px;
+  margin-bottom: 20px;
+}
+
+.streak-flame {
+  font-size: 1.9rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.streak-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.streak-title {
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--brown);
+}
+
+.streak-sub {
+  font-size: 0.85rem;
+  color: var(--brown-soft);
+}
+
+.streak-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translate(-50%, 140%);
+  background: var(--brown);
+  color: var(--cream);
+  font-weight: 700;
+  padding: 14px 22px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow);
+  z-index: 60;
+  max-width: min(92vw, 460px);
+  text-align: center;
+  transition: transform 0.35s ease;
+}
+
+.streak-toast.visible { transform: translate(-50%, 0); }
+
+
+/* ---------- Insights (insights.html) ---------- */
+
+.insights-heading {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 1.35rem;
+  margin: 34px 0 4px;
+  color: var(--brown);
+}
+
+.insights-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.insights-bar-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 190px) 1fr 46px;
+  align-items: center;
+  gap: 12px;
+}
+
+.insights-bar-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--brown);
+}
+
+.insights-bar-track {
+  background: var(--cream-2);
+  border-radius: 999px;
+  height: 22px;
+  overflow: hidden;
+}
+
+.insights-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--orange), var(--terracotta));
+}
+
+.insights-bar-value {
+  font-weight: 800;
+  color: var(--brown);
+  text-align: right;
+}
+
+/* A table is the one thing on this site allowed to scroll sideways. */
+.insights-table-wrap {
+  overflow-x: auto;
+  margin-top: 16px;
+  background: var(--white);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.insights-table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 560px;
+  font-size: 0.9rem;
+}
+
+.insights-table th,
+.insights-table td {
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--cream-2);
+  white-space: nowrap;
+}
+
+.insights-table th {
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 600;
+  color: var(--brown-soft);
+  background: var(--cream);
+  position: sticky;
+  top: 0;
+}
+
+.insights-table tr:last-child td { border-bottom: none; }
+
+.insights-empty {
+  padding: 18px;
+  color: var(--brown-soft);
+  font-style: italic;
+}
+
+
+/* ---------- Drawn icons (js/icons.js) ---------- */
+
+[data-icon] {
+  display: inline-flex;
+  align-items: center;
+}
+
+.icn {
+  width: 1.05em;
+  height: 1.05em;
+  vertical-align: -0.17em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+
+.icn-lg {
+  width: 3rem;
+  height: 3rem;
+  stroke-width: 1.4;
+  color: var(--orange);
+}
+
+/* An icon sitting inside a text button needs a little air after it. */
+.nav-links a .icn,
+.link-pill .icn,
+.btn .icn {
+  margin-right: 0.4em;
+}
+
+.nav-bell .icn,
+#nav-sign-out .icn {
+  margin-right: 0;
+  width: 1.2em;
+  height: 1.2em;
+}

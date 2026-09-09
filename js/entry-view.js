@@ -68,9 +68,9 @@ function buildStoryHtml(entry, ctx) {
 
   const actionsHtml = `
     <div class="story-actions">
-      ${isOwner ? `<a href="entry.html?id=${encodeURIComponent(entry.id)}" class="btn btn-back">✏️ Edit</a>` : ''}
-      <button type="button" class="btn btn-back" id="log-again-btn">🔁 Log This Again</button>
-      <button type="button" class="btn btn-back" id="share-btn">📤 Share</button>
+      ${isOwner ? `<a href="entry.html?id=${encodeURIComponent(entry.id)}" class="btn btn-back">${BiteBookIcons.svg('pencil')} Edit</a>` : ''}
+      <button type="button" class="btn btn-back" id="log-again-btn">${BiteBookIcons.svg('repeat')} Log This Again</button>
+      <button type="button" class="btn btn-back" id="share-btn">${BiteBookIcons.svg('share')} Share</button>
     </div>
     ${sharedByHtml}
     ${sharePanelHtml}
@@ -164,170 +164,6 @@ function buildStoryHtml(entry, ctx) {
   return heroHtml + actionsHtml + sections.join('');
 }
 
-function shareEntryAsImage(entry) {
-  const canvas = document.createElement('canvas');
-  const W = 900, H = 1100;
-  canvas.width = W;
-  canvas.height = H;
-  const ctx = canvas.getContext('2d');
-
-  const grad = ctx.createLinearGradient(0, 0, W, H);
-  grad.addColorStop(0, '#fff8ef');
-  grad.addColorStop(1, '#ffe3cf');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, W, H);
-
-  const drawPhotoAndText = (photoImg, isRetry) => {
-    const padding = 50;
-    let y = padding;
-
-    if (photoImg) {
-      const photoH = 480;
-      const scale = Math.max(W / photoImg.width, photoH / photoImg.height);
-      const sw = (W) / scale;
-      const sh = photoH / scale;
-      const sx = (photoImg.width - sw) / 2;
-      const sy = (photoImg.height - sh) / 2;
-      ctx.save();
-      ctx.beginPath();
-      const r = 28;
-      ctx.moveTo(padding + r, y);
-      ctx.arcTo(W - padding, y, W - padding, y + photoH, r);
-      ctx.arcTo(W - padding, y + photoH, padding, y + photoH, r);
-      ctx.arcTo(padding, y + photoH, padding, y, r);
-      ctx.arcTo(padding, y, W - padding, y, r);
-      ctx.closePath();
-      ctx.clip();
-      ctx.drawImage(photoImg, sx, sy, sw, sh, padding, y, W - padding * 2, photoH);
-      ctx.restore();
-      y += photoH + 40;
-    } else {
-      y += 20;
-    }
-
-    ctx.fillStyle = '#4a352a';
-    ctx.font = '700 52px Georgia, serif';
-    wrapText(ctx, entry.food || 'A Food Memory', padding, y + 10, W - padding * 2, 58);
-    y += 90;
-
-    ctx.font = '400 26px Georgia, serif';
-    ctx.fillStyle = '#7a6559';
-    const facts = [];
-    const when = dateTimeSummaryLabel(entry);
-    if (when) facts.push(`🕰️ ${when}`);
-    if (entry.placeName) facts.push(`📍 ${entry.placeName}`);
-    const companion = companionSummaryLabel(entry);
-    if (companion) facts.push(`👥 ${companion}`);
-    const maker = makerSummaryLabel(entry);
-    if (maker) facts.push(`👩‍🍳 ${maker}`);
-    if (entry.rating) facts.push(ratingStarsLabel(entry.rating));
-
-    facts.forEach((line) => {
-      ctx.fillText(line, padding, y);
-      y += 42;
-    });
-
-    if (entry.reflection) {
-      y += 20;
-      ctx.font = 'italic 400 26px Georgia, serif';
-      ctx.fillStyle = '#4a352a';
-      y = wrapText(ctx, `"${entry.reflection}"`, padding, y, W - padding * 2, 36);
-    }
-
-    ctx.font = '700 24px Nunito, sans-serif';
-    ctx.fillStyle = '#f0672c';
-    ctx.fillText('🍜 Bite Book', padding, H - 40);
-
-    exportCanvas(isRetry);
-  };
-
-  // A photo served from private storage taints the canvas if its CORS
-  // headers don't come back as expected, and toBlob then throws instead of
-  // producing an image. Rather than leave the button doing nothing, redraw
-  // the card without the photo and share that — a card with no picture beats
-  // a share button that silently fails.
-  function exportCanvas(alreadyRetried) {
-    try {
-      canvas.toBlob(handleBlob, 'image/png');
-    } catch (err) {
-      if (alreadyRetried) return;
-      ctx.clearRect(0, 0, W, H);
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, W, H);
-      drawPhotoAndText(null, true);
-    }
-  }
-
-  async function handleBlob(blob) {
-    if (!blob) return;
-    const filename = `${(entry.food || 'bite-book-entry').replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.png`;
-
-    // On a phone, hand the card straight to the OS share sheet — Instagram,
-    // WhatsApp and Messages are all targets there. Desktop browsers and
-    // anything that can't share a file fall back to a plain download.
-    const file = (typeof File !== 'undefined')
-      ? new File([blob], filename, { type: 'image/png' })
-      : null;
-
-    if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({
-          files: [file],
-          title: entry.food || 'Bite Book',
-          text: `${entry.food || 'A meal'} — from my Bite Book`,
-        });
-        if (typeof BiteBookTrack !== 'undefined') {
-          BiteBookTrack.event('entry_shared', { via: 'share_sheet' });
-        }
-        return;
-      } catch (err) {
-        // The share sheet was dismissed — that's a decision, not a failure.
-        if (err && err.name === 'AbortError') return;
-        // Anything else: fall through and download instead.
-      }
-    }
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    if (typeof BiteBookTrack !== 'undefined') {
-      BiteBookTrack.event('entry_shared', { via: 'download' });
-    }
-  }
-
-  if (entry.photos && entry.photos[0]) {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => drawPhotoAndText(img, false);
-    img.onerror = () => drawPhotoAndText(null, false);
-    img.src = entry.photos[0].url;
-  } else {
-    drawPhotoAndText(null, false);
-  }
-}
-
-function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
-  const words = text.split(' ');
-  let line = '';
-  for (let i = 0; i < words.length; i++) {
-    const testLine = line + words[i] + ' ';
-    if (ctx.measureText(testLine).width > maxWidth && line) {
-      ctx.fillText(line, x, y);
-      line = words[i] + ' ';
-      y += lineHeight;
-    } else {
-      line = testLine;
-    }
-  }
-  ctx.fillText(line, x, y);
-  return y + lineHeight;
-}
-
 document.addEventListener('bitebook:ready', async () => {
   const container = document.getElementById('story-content');
   const params = new URLSearchParams(window.location.search);
@@ -359,10 +195,14 @@ document.addEventListener('bitebook:ready', async () => {
     window.location.href = `entry.html?id=${encodeURIComponent(newId)}`;
   });
 
-  document.getElementById('share-btn').addEventListener('click', (e) => {
-    e.target.textContent = '📤 Preparing...';
-    shareEntryAsImage(entry);
-    setTimeout(() => { e.target.textContent = '📤 Share'; }, 1200);
+  const shareBtn = document.getElementById('share-btn');
+  shareBtn.addEventListener('click', () => {
+    // innerHTML, not textContent — the button holds a drawn icon, and a click
+    // can land on the icon itself, so e.target isn't reliably the button.
+    const label = shareBtn.innerHTML;
+    shareBtn.textContent = 'Preparing...';
+    BiteBookShare.shareEntry(entry);
+    setTimeout(() => { shareBtn.innerHTML = label; }, 1200);
   });
 
   const shareToggleLink = document.getElementById('share-toggle-link');

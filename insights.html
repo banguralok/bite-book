@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Insights — Bite Book</title>
+<link rel="icon" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff8a4c">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=3">
+</head>
+<body>
+
+<header class="nav" id="site-header"></header>
+
+<main class="entries-page">
+  <a href="entries.html" class="wizard-link-start" style="margin-bottom: 20px; display: inline-flex;">‹ Back to My Entries</a>
+
+  <div class="entries-header">
+    <p class="eyebrow">how the beta is really going</p>
+    <h1>Insights</h1>
+    <p class="section-sub" style="margin: 12px 0 0;">Counts and dates only — never anyone's dishes, notes or photos.</p>
+  </div>
+
+  <div id="insights-loading" class="empty-state">
+    <div class="empty-state-icon"><span data-icon="hourglass" data-icon-class="icn-lg"></span></div>
+    <h3>Counting…</h3>
+  </div>
+
+  <div id="insights-denied" class="empty-state" style="display: none;">
+    <div class="empty-state-icon"><span data-icon="lock" data-icon-class="icn-lg"></span></div>
+    <h3>Not your page</h3>
+    <p>Insights is only visible to a Bite Book admin.</p>
+    <a href="entries.html" class="btn btn-primary">Back to My Entries</a>
+  </div>
+
+  <div id="insights-body" style="display: none;">
+    <div id="insights-overview" class="stat-tiles"></div>
+
+    <h2 class="insights-heading">Did they come back?</h2>
+    <p class="section-sub">Of the people who had been here long enough to have the chance, how many showed up again afterwards.</p>
+    <div id="insights-retention" class="stat-tiles"></div>
+
+    <h2 class="insights-heading">Where people fall out</h2>
+    <p class="section-sub">Each bar is the number of people who ever got that far.</p>
+    <div id="insights-funnel" class="insights-bars"></div>
+
+    <h2 class="insights-heading">Person by person</h2>
+    <p class="section-sub">“Came back, logged nothing” is the column that matters — those are visits to remember, not to maintain a list.</p>
+    <div class="insights-table-wrap"><table class="insights-table" id="insights-people"></table></div>
+
+    <h2 class="insights-heading">Week by week</h2>
+    <div class="insights-table-wrap"><table class="insights-table" id="insights-weekly"></table></div>
+
+    <h2 class="insights-heading">Which pages earn their place</h2>
+    <div class="insights-table-wrap"><table class="insights-table" id="insights-pages"></table></div>
+
+    <p class="upload-status" id="insights-error"></p>
+  </div>
+</main>
+
+<footer class="footer" id="site-footer"></footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/icons.js?v=1"></script>
+<script src="js/partials.js?v=4"></script>
+<script src="js/track.js?v=1"></script>
+<script src="js/profile.js?v=3"></script>
+<script src="js/insights.js?v=1"></script>
+</body>
+</html>
