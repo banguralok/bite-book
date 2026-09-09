@@ -36,6 +36,7 @@ function buildSiteHeader(isSignedIn) {
 
   return `
     ${brand}
+    <div id="site-search" class="site-search"></div>
     <nav class="nav-links">
       <a href="entries.html">${BiteBookIcons.svg('book')} My Entries</a>
       <a href="quick-log.html" class="nav-quick">${BiteBookIcons.svg('bolt')} Quick Log</a>

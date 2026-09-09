@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Your Trips — Bite Book</title>
+<title>Your Year in Food — Bite Book</title>
 <link rel="icon" href="icons/icon-192.png">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#ff8a4c">
@@ -21,23 +21,31 @@
   <a href="entries.html" class="wizard-link-start" style="margin-bottom: 20px; display: inline-flex;">‹ Back to My Entries</a>
 
   <div class="entries-header">
-    <p class="eyebrow">food + travel</p>
-    <h1>Your Trips</h1>
-    <p class="section-sub" style="margin: 12px 0 0;">Group meals from a trip together into their own story.</p>
+    <p class="eyebrow">a year of eating</p>
+    <h1 id="year-heading">Your year in food</h1>
   </div>
 
-  <button type="button" class="toggle-link" id="new-trip-toggle"><span data-icon="plus"></span> Start a New Trip</button>
-  <div class="field-group" id="new-trip-wrap" style="display: none; margin-top: 14px; max-width: 420px;">
-    <input type="text" id="new-trip-name" class="text-input" placeholder="e.g. Italy, June 2026" autocomplete="off">
-    <button type="button" class="btn btn-primary" id="new-trip-create-btn" style="margin-top: 10px;">Create Trip</button>
+  <div class="chip-grid" id="year-picker" style="justify-content: center; margin-bottom: 18px;"></div>
+
+  <div id="year-empty" class="empty-state" style="display: none;">
+    <div class="empty-state-icon"><span data-icon="calendar" data-icon-class="icn-lg"></span></div>
+    <h3>Nothing logged that year</h3>
+    <p>Pick another year above, or go and eat something memorable.</p>
+    <a href="smart-entry.html" class="btn btn-primary"><span data-icon="sparkle"></span> Log a Meal</a>
   </div>
 
-  <div id="trips-list" class="ranking-list" style="margin-top: 24px;"></div>
+  <div id="year-body" style="display: none;">
+    <div id="year-photos" class="year-photo-strip"></div>
 
-  <div id="trips-empty" class="empty-state" style="display: none;">
-    <div class="empty-state-icon"><span data-icon="suitcase" data-icon-class="icn-lg"></span></div>
-    <h3>No trips yet</h3>
-    <p>Start one and add a few entries to it to see your trip's story take shape.</p>
+    <div id="year-tiles" class="stat-tiles"></div>
+
+    <div id="year-highlights" class="on-this-day" style="display: flex; margin-top: 26px;"></div>
+
+    <div class="entries-actions-row" style="margin-top: 26px;">
+      <button type="button" class="link-pill" id="year-share-btn"><span data-icon="share"></span> Share My Year</button>
+      <a href="stats.html" class="link-pill"><span data-icon="chart"></span> Your Food Story</a>
+      <a href="ranking.html" class="link-pill"><span data-icon="trophy"></span> Rankings</a>
+    </div>
   </div>
 </main>
 
@@ -53,7 +61,9 @@
 <script src="js/geo.js?v=2"></script>
 <script src="js/storage.js?v=3"></script>
 <script src="js/labels.js?v=2"></script>
+<script src="js/share-card.js?v=2"></script>
+<script src="js/streak.js?v=2"></script>
 <script src="js/search.js?v=1"></script>
-<script src="js/trips.js"></script>
+<script src="js/year-review.js?v=1"></script>
 </body>
 </html>

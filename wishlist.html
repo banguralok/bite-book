@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Want to Try — Bite Book</title>
+<link rel="icon" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff8a4c">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=4">
+</head>
+<body>
+
+<header class="nav" id="site-header"></header>
+
+<main class="entries-page">
+  <a href="entries.html" class="wizard-link-start" style="margin-bottom: 20px; display: inline-flex;">‹ Back to My Entries</a>
+
+  <div class="entries-header">
+    <p class="eyebrow">the list of somedays</p>
+    <h1>Want to Try</h1>
+    <p class="section-sub" style="margin: 12px 0 0;">Places and dishes someone told you about — kept with who said it and why, so it still means something months later.</p>
+  </div>
+
+  <button type="button" class="toggle-link" id="add-wish-toggle"><span data-icon="plus"></span> Add Something</button>
+
+  <div class="field-group" id="add-wish-wrap" style="display: none; margin-top: 14px; max-width: 520px;">
+    <label class="field-label">What kind?</label>
+    <div class="chip-grid" id="wish-kind-chips">
+      <button type="button" class="chip small selected" aria-pressed="true" data-value="place">A place</button>
+      <button type="button" class="chip small" aria-pressed="false" data-value="dish">A dish</button>
+    </div>
+
+    <label class="field-label" for="wish-title" style="margin-top: 14px;" id="wish-title-label">Which place?</label>
+    <input type="text" id="wish-title" class="text-input" placeholder="e.g. Thai Basil on Main St" autocomplete="off">
+
+    <div id="wish-place-wrap" style="display: none; margin-top: 14px;">
+      <label class="field-label" for="wish-place">Where can you get it? <span class="field-sublabel" style="display:inline; font-weight:400;">(optional)</span></label>
+      <input type="text" id="wish-place" class="text-input" placeholder="e.g. Mum's kitchen" autocomplete="off">
+    </div>
+
+    <label class="field-label" for="wish-by" style="margin-top: 14px;">Who recommended it? <span class="field-sublabel" style="display:inline; font-weight:400;">(optional)</span></label>
+    <input type="text" id="wish-by" class="text-input" list="wish-people" placeholder="e.g. Priya" autocomplete="off">
+    <datalist id="wish-people"></datalist>
+
+    <label class="field-label" for="wish-note" style="margin-top: 14px;">Why? <span class="field-sublabel" style="display:inline; font-weight:400;">(optional, but this is the bit you'll forget)</span></label>
+    <input type="text" id="wish-note" class="text-input" placeholder="e.g. said the crab curry is the best she's had" autocomplete="off">
+
+    <button type="button" class="btn btn-primary" id="wish-save-btn" style="margin-top: 16px;">Add to the List</button>
+    <p class="upload-status" id="wish-status"></p>
+  </div>
+
+  <div id="wish-open-list" class="entries-list" style="margin-top: 24px;"></div>
+
+  <div id="wish-empty" class="empty-state" style="display: none;">
+    <div class="empty-state-icon"><span data-icon="star" data-icon-class="icn-lg"></span></div>
+    <h3>Nothing on the list yet</h3>
+    <p>Next time someone says "you have to try this" — put it here before you forget who said it.</p>
+  </div>
+
+  <div id="wish-done-section" style="display: none; margin-top: 34px;">
+    <button type="button" class="toggle-link" id="wish-done-toggle">Already tried <span id="wish-done-count"></span></button>
+    <div id="wish-done-list" class="entries-list" style="display: none; margin-top: 14px;"></div>
+  </div>
+</main>
+
+<footer class="footer" id="site-footer"></footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/icons.js?v=2"></script>
+<script src="js/partials.js?v=5"></script>
+<script src="js/track.js?v=1"></script>
+<script src="js/profile.js?v=3"></script>
+<script src="js/geo.js?v=2"></script>
+<script src="js/storage.js?v=3"></script>
+<script src="js/labels.js?v=2"></script>
+<script src="js/search.js?v=1"></script>
+<script src="js/wishlist.js?v=1"></script>
+</body>
+</html>

@@ -482,9 +482,102 @@ const BiteBookStorage = (() => {
     return !error;
   }
 
+  // ---------- want to try (wishlist) ----------
+
+  function mapWishRow(row) {
+    return {
+      id: row.id,
+      kind: row.kind,
+      title: row.title,
+      placeName: row.place_name,
+      recommendedBy: row.recommended_by,
+      note: row.note,
+      status: row.status,
+      entryId: row.entry_id,
+      createdAt: row.created_at,
+    };
+  }
+
+  async function listWishes() {
+    const userId = await currentUserId();
+    if (!userId) return [];
+    const { data, error } = await supabaseClient
+      .from('wishlist')
+      .select('*')
+      .eq('owner_id', userId)
+      .order('created_at', { ascending: false });
+    return (error || !data) ? [] : data.map(mapWishRow);
+  }
+
+  async function createWish(wish) {
+    const userId = await currentUserId();
+    if (!userId) return null;
+    const { data, error } = await supabaseClient
+      .from('wishlist')
+      .insert({
+        id: newId(),
+        owner_id: userId,
+        kind: wish.kind || 'place',
+        title: wish.title,
+        place_name: wish.placeName || null,
+        recommended_by: wish.recommendedBy || null,
+        note: wish.note || null,
+      })
+      .select('*')
+      .single();
+    return (error || !data) ? null : mapWishRow(data);
+  }
+
+  async function deleteWish(id) {
+    const { error } = await supabaseClient.from('wishlist').delete().eq('id', id);
+    return !error;
+  }
+
+  // Turns a wish into a real draft entry and links the two, so the list can
+  // later show that a recommendation actually paid off rather than just
+  // losing the row. A dish fills in the food; a place fills in where.
+  async function logWish(wish) {
+    const now = new Date().toISOString();
+    const entry = {
+      id: newId(),
+      status: 'draft',
+      createdAt: now,
+      updatedAt: now,
+      ateOn: toDateInputValue(new Date()),
+    };
+    if (wish.kind === 'dish') {
+      entry.food = wish.title;
+      if (wish.placeName) entry.placeName = wish.placeName;
+    } else {
+      entry.placeName = wish.title;
+    }
+    const saved = await saveEntry(entry);
+    if (!saved) return null;
+
+    const { error } = await supabaseClient
+      .from('wishlist')
+      .update({ status: 'done', entry_id: entry.id, updated_at: now })
+      .eq('id', wish.id);
+    if (error) return null;
+    return entry.id;
+  }
+
+  async function reopenWish(id) {
+    const { error } = await supabaseClient
+      .from('wishlist')
+      .update({ status: 'open', entry_id: null, updated_at: new Date().toISOString() })
+      .eq('id', id);
+    return !error;
+  }
+
   return {
     newId,
     getCurrentUserId: currentUserId,
+    listWishes,
+    createWish,
+    deleteWish,
+    logWish,
+    reopenWish,
     getEntry,
     saveEntry,
     deleteEntry,

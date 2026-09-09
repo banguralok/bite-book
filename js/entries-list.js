@@ -147,6 +147,13 @@ document.addEventListener('bitebook:ready', async () => {
   const smartSearchActiveNote = document.getElementById('smart-search-active-note');
 
   let statusFilter = 'all';
+  // Set from the URL when you arrive here by clicking a person or a place in
+  // the header search. Kept separate from the text search so clearing one
+  // doesn't silently clear the other.
+  const urlParams = new URLSearchParams(window.location.search);
+  const personFilter = urlParams.get('person');
+  const placeFilter = urlParams.get('place');
+  if (urlParams.get('q')) searchInput.value = urlParams.get('q');
   let hiddenIds = new Set();
   let pendingDelete = null;
   let smartSearchIds = null;
@@ -180,9 +187,44 @@ document.addEventListener('bitebook:ready', async () => {
     if (typeof BiteBookOccasions !== 'undefined') {
       BiteBookOccasions.render('occasions', BiteBookProfile.get(), myEntries);
     }
+    if (typeof BiteBookYear !== 'undefined') {
+      BiteBookYear.renderBanner('year-banner', allEntriesCache, myId);
+    }
     if (typeof checkForCrossUserDuplicates === 'function') {
       checkForCrossUserDuplicates(allEntriesCache).catch(() => {});
     }
+  }
+
+  // A person can be attached to a meal three ways — as a saved family member,
+  // as free text in "who were you with", or as whoever cooked it — so all
+  // three have to be checked or the filter quietly loses meals.
+  function entryInvolvesPerson(entry, name) {
+    const needle = name.trim().toLowerCase();
+    if (!needle) return true;
+    const names = [];
+    if (typeof resolveFamilyMemberNames === 'function') {
+      resolveFamilyMemberNames(entry.companionFamilyIds).forEach((n) => names.push(n));
+    }
+    (entry.companionNames || '').split(/[,&]| and /i).forEach((n) => names.push(n));
+    if (entry.madeByName) names.push(entry.madeByName);
+    return names.some((n) => String(n).trim().toLowerCase() === needle);
+  }
+
+  function renderActiveFilter() {
+    const el = document.getElementById('active-filter');
+    if (!el) return;
+    const active = personFilter
+      ? { icon: 'person', label: `Meals with ${personFilter}` }
+      : (placeFilter ? { icon: 'pin', label: `Meals at ${placeFilter}` } : null);
+    if (!active) {
+      el.style.display = 'none';
+      return;
+    }
+    el.style.display = 'flex';
+    el.innerHTML = `
+      <span class="active-filter-label">${BiteBookIcons.svg(active.icon)} ${escapeHtml(active.label)}</span>
+      <a class="link-pill" href="entries.html">Clear</a>
+    `;
   }
 
   function searchableText(entry) {
@@ -196,6 +238,8 @@ document.addEventListener('bitebook:ready', async () => {
     if (hiddenIds.has(entry.id)) return false;
     if (statusFilter === 'complete' && entry.status !== 'complete') return false;
     if (statusFilter === 'draft' && entry.status === 'complete') return false;
+    if (personFilter && !entryInvolvesPerson(entry, personFilter)) return false;
+    if (placeFilter && String(entry.placeName || '').trim().toLowerCase() !== placeFilter.trim().toLowerCase()) return false;
     if (query) {
       const substringMatch = searchableText(entry).includes(query);
       const smartMatch = !!(smartSearchIds && smartSearchForQuery === query && smartSearchIds.has(entry.id));
@@ -449,6 +493,7 @@ document.addEventListener('bitebook:ready', async () => {
     reader.readAsText(file);
   });
 
+  renderActiveFilter();
   await refreshEntriesCache();
   render();
 });

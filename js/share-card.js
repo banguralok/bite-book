@@ -361,5 +361,60 @@ const BiteBookShare = (() => {
     );
   }
 
-  return { shareEntry, shareTrip };
+  // ---------- a whole year ----------
+
+  function drawYearCard(stats) {
+    return (ctx, images, startY) => {
+      let y = startY;
+
+      if (images.length) {
+        const collageH = 420;
+        drawCollage(ctx, images, PAD, y, W - PAD * 2, collageH);
+        y += collageH + 44;
+      } else {
+        y += 30;
+      }
+
+      ctx.fillStyle = INK_SOFT;
+      ctx.font = '600 24px Nunito, sans-serif';
+      ctx.fillText('MY YEAR IN FOOD', PAD, y);
+      y += 54;
+
+      ctx.fillStyle = INK;
+      ctx.font = '700 78px Georgia, serif';
+      ctx.fillText(stats.year, PAD, y);
+      y += 40;
+
+      ctx.font = '400 27px Georgia, serif';
+      ctx.fillStyle = INK_SOFT;
+      const lines = [];
+      lines.push(`🍽️ ${stats.meals} meal${stats.meals === 1 ? '' : 's'} · 📍 ${stats.places} place${stats.places === 1 ? '' : 's'}`);
+      if (stats.topDish) lines.push(`🥇 Most logged: ${stats.topDish.label}`);
+      if (stats.topPlace) lines.push(`🏠 Place of the year: ${stats.topPlace.label}`);
+      if (stats.topCompanion) lines.push(`👥 Most often with: ${stats.topCompanion.label}`);
+      if (stats.longestStreak > 1) lines.push(`🔥 Longest run: ${stats.longestStreak} days`);
+      lines.forEach((line) => {
+        y = wrapText(ctx, line, PAD, y, W - PAD * 2, 38);
+        y += 6;
+      });
+
+      drawFooter(ctx);
+      return y;
+    };
+  }
+
+  async function shareYear(stats) {
+    const urls = (stats.photos || []).map((p) => p.url).filter(Boolean).slice(0, 4);
+    const images = urls.length ? await loadImages(urls) : [];
+    render(
+      drawYearCard(stats),
+      images,
+      safeFilename(`bite-book-${stats.year}`, 'bite-book-year'),
+      `My ${stats.year} in food`,
+      `${stats.meals} meal${stats.meals === 1 ? '' : 's'} worth remembering — from my Bite Book`,
+      'year_shared'
+    );
+  }
+
+  return { shareEntry, shareTrip, shareYear };
 })();
