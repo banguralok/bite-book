@@ -114,6 +114,7 @@ select props->>'via' as created_via, count(*) as entries
 from public.events where name = 'entry_created'
 group by 1 order by entries desc;
 
-select props->>'via' as shared_via, count(*) as shares, count(distinct user_id) as people
-from public.events where name = 'entry_shared'
-group by 1 order by shares desc;
+select name as share_type, props->>'via' as shared_via,
+       count(*) as shares, count(distinct user_id) as people
+from public.events where name in ('entry_shared', 'trip_shared')
+group by 1, 2 order by shares desc;

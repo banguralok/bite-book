@@ -4,7 +4,9 @@ Bite Book is a personal food-journaling app for a family and their close circle:
 
 This document has two parts: a **Feature List** (what the app can do, at a glance) and a **Functionality List** (how each part actually works, page by page). See `ROADMAP.md` for what shipped when, what's on hold, and what's proposed but not built yet; see `VISION.md` for the why behind the what.
 
-> **Everything below is built and deployed.** That is the entire job of this file, and it is worth stating plainly now that presentation material exists which runs ahead of the product. The family pitch deck (`BiteBook_Pitch_002.pptx`) and the landing-page mockup (`bitebook_site_014.html`) both describe features that are not in the codebase — a header search box, a Family Dish Duel, a "Want to Try" wishlist, a Memory Graph, restaurant-menu lookup, and a reservation agent among them. None of those appear here, and none should be added until they ship. When the two disagree, this file is right and the deck is aspirational; `ROADMAP.md` carries the full list under "Where the story runs ahead of the product."
+> **Status, 2026-09-09:** everything below is built. The v2.4 items — Trip Story sharing, occasion reminders, streaks, Admin Insights and the icon pass — are **built and committed but not yet pushed to Netlify**, so they are not on the live site yet; `ROADMAP.md` marks them. Everything else here is live.
+>
+> **Nothing below is aspirational.** That is the entire job of this file, and it is worth stating plainly now that presentation material exists which runs ahead of the product. The family pitch deck (`BiteBook_Pitch_002.pptx`) and the landing-page mockup (`bitebook_site_014.html`) both describe features that are not in the codebase — a header search box, a Family Dish Duel, a "Want to Try" wishlist, a Memory Graph, restaurant-menu lookup, and a reservation agent among them. None of those appear here, and none should be added until they ship. When the two disagree, this file is right and the deck is aspirational; `ROADMAP.md` carries the full list under "Where the story runs ahead of the product."
 
 ---
 
@@ -53,7 +55,7 @@ This document has two parts: a **Feature List** (what the app can do, at a glanc
 **Data safety**
 - Export your full journal (entries + profile) as a JSON backup file, anytime
 - Import a JSON backup to restore or merge entries
-- Minimal, privacy-conscious usage analytics (session starts, page views, entry creation) — never the content of an entry, and scoped so anyone can only ever read their own activity, same as everything else
+- Minimal, privacy-conscious usage analytics (app opens, page views, entries created and by which route, entries and trips shared and by which method) — never the content of an entry. An ordinary account can read only its own activity rows, same as everything else. **An admin is the one exception, added in v2.4:** the Insights page can see counts and dates across everyone — how many people opened the app, how many days each person came back, how many entries each has — but never a dish, note, place, photo or any other content. If Bite Book ever has users outside the family, this is the line a privacy policy has to describe honestly
 
 **Platform**
 - Installable as a Progressive Web App (real app icon and logo, home-screen icon, offline-capable shell)
@@ -82,6 +84,9 @@ The default way to start a new entry (linked from the header's "New Entry" butto
 
 ### Story View — [entry-view.html](entry-view.html)
 Read-only narrative page for one completed entry: hero photo, title, and conditionally-rendered sections (place, company, maker, occasion, ingredients, what-you-loved, reflection, extra photos, videos), each with its own edit-pencil link back to the relevant wizard step — omitted entirely when the entry isn't yours. Owners also get a "Share with..." panel (see Sharing, above). The "📤 Share" action renders the entry onto a canvas (photo, title, key facts, a reflection quote, watermark) and hands it to the device's native share sheet when available — Instagram, WhatsApp, Messages, anything registered as a share target — falling back to a plain PNG download when it isn't, or if a private-storage photo taints the canvas and the share sheet path fails (retried once, without the photo, rather than failing silently).
+
+### Quick Log — [quick-log.html](quick-log.html)
+The fastest path in, and the only one with no network dependency: one field for the dish name, everything else guessed. Date is today, meal type and time of day come from the clock, and — if location is allowed — the place is reverse-geocoded and compared against the home address on your Profile, so eating at home is tagged as home and a restaurant is tagged as a restaurant with its name and short address filled in. Nothing here waits on AI, which is why it still works when Smart Entry can't.
 
 ### My Entries — [entries.html](entries.html)
 Live search and status filtering across everything visible to you (owned + shared). A **streak strip** sits at the top (`js/streak.js`), then any **upcoming occasion** cards (`js/occasions.js`), then **On This Day**. Streaks and occasions both deliberately ignore entries other people shared with you — they are about your own logging. An **On This Day** card above the list surfaces a past entry matching today's date from a prior year. A dismissible banner (free, instant, client-side — no AI call) appears only when likely duplicate place names are found among your own entries, linking to Clean Up Places. Entries shared with you show a "shared by" tag and have no delete button. Export/Import, Smart Search, and Log This Again all work as before.

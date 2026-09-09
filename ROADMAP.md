@@ -8,6 +8,22 @@ A living record of what's shipped, what's on hold, and what's proposed but not y
 - **Status:** ✅ Shipped · 🚧 Built, not yet deployed · ⏸️ On hold (deliberately paused) · 💡 Proposed (discussed, not planned) · ❓ Needs a decision before it can be planned
 - Each shipped/built item links back to its commit(s) for traceability.
 
+## Database migrations — what exists, and what has been run
+
+Every one of these is run by hand in the Supabase SQL editor; nothing runs them automatically, so this is the only record of which are done. Keep it current — the cost of getting it wrong is a page that looks broken for reasons nothing in the code explains.
+
+| File | What it does | Run? |
+|---|---|---|
+| `supabase/schema.sql` | Profiles, entries, shares, invites, trips stub, RLS | ✅ |
+| `002_ranking_and_photos.sql` | Ranking order, `eat_again_frequency`, the private photos bucket | ✅ |
+| `003_duplicate_detection.sql` | `entry_signatures` view, notifications, cross-user duplicate reporting | ✅ |
+| `004_trips.sql` | Links entries to a trip | ✅ |
+| `005_events.sql` | The analytics `events` table | ✅ |
+| `006_admin_insights.sql` | `admins` table + six aggregate-only reporting functions | ✅ 2026-09-09 |
+| `007_count_trip_shares.sql` | Replaces `admin_funnel()` so trip shares count as shares | ❌ **not yet run** |
+
+A note for whoever runs the next one: the SQL editor reports **"0 rows"** after a successful `insert`, because an insert returns no rows. That is not a failure. Check the table itself, not the row count.
+
 ## Version history
 
 ### v1.0 — Local Edition (`main` branch, pre-pivot)
@@ -52,7 +68,7 @@ Built in a different session (Claude Opus 5) and reviewed/verified here before p
 - **Beta usage analytics**: a minimal `events` table + `js/track.js` (session starts, page views, entry creation — never entry content, RLS-scoped to insert/read-your-own) plus `supabase/analytics.sql` with scorecard queries. First real infrastructure for answering "are people actually coming back," see Proposed below
 - **Security fix**: `supabase/` (schema + every migration) was publicly fetchable because Netlify serves the whole repo root — blocked via `_redirects`
 
-### v2.4 — Batch 1 of the "simplest first" run — built 2026-09-09, not yet deployed
+### v2.4 — Batch 1 of the "simplest first" run — built 2026-09-09, **committed but not yet pushed**
 Ordered cheapest-to-build first, deliberately. The gender/ethnicity profile fields that headed the list were **dropped, not deferred**: nothing in the app reads them, so collecting sensitive personal data would have added a privacy obligation with no product behind it.
 - **Trip Story sharing** — a whole trip as one shareable card (adaptive 1–4 photo collage, date range, meal/place counts, top cuisine, best bite). The entry and trip cards now share one module, `js/share-card.js`; `js/entry-view.js` lost its private copy of that canvas code
 - **Occasion reminders** — birthdays and anniversaries already on the Profile page, surfaced up to 14 days ahead with "here's what you ate for it last time", dismissible per occasion (`js/occasions.js`). This is the feasible half of the Notifications item below; real push still needs Web Push and a scheduler, which do not exist
@@ -60,7 +76,13 @@ Ordered cheapest-to-build first, deliberately. The gender/ethnicity profile fiel
 - **Admin Insights** — `insights.html`, `js/insights.js` and migration `006_admin_insights.sql`: an `admins` table (deliberately *not* a column on `profiles`, which any user could write to) plus six aggregate-only `security definer` functions. Day-7/day-30 return rates, a drop-off funnel, per-person and weekly tables. Turns the `events` data shipped in v2.3 into something anyone actually looks at
 - **Icon pass** — `js/icons.js`: 22 drawn outline icons replacing emoji in the header nav, the main action buttons and the empty states. Scoped on purpose to the furniture; emoji inside meal cards, story sections and streak badges stay, because there they are the voice rather than a placeholder
 
-**Before this deploys:** run `supabase/migrations/006_admin_insights.sql` in the Supabase SQL editor, then the `insert into public.admins ...` line inside it with your own email. Until that runs, the Insights link simply never appears and nothing else changes — `js/profile.js` treats a missing `admins` table as "not an admin".
+**Database side: done, 2026-09-09.** Migration `006_admin_insights.sql` has been run in the Supabase SQL editor and the owner's row is in `public.admins`. Worth recording for the next person who runs an insert here: the SQL editor reports "0 rows" for a successful `insert`, because an insert returns no rows — it is not a failure signal. Check the table, not the row count.
+
+**One follow-up migration, `007_count_trip_shares.sql` — needs running.** Trip Story sharing logs a `trip_shared` event, but `admin_funnel()` was written before that existed and counted only `entry_shared`, so anyone who shared a whole trip and never a single meal was invisible at exactly the step the funnel measures. 007 replaces that one function; it drops nothing and changes no data, and is safe to run twice. Found during the doc audit, not by the tests — the tests exercised the code, and this was a gap between two pieces of correct code.
+
+**Still to do:** push `multiuser-edition` so Netlify rebuilds. Four commits are unpushed as of writing. Nothing in v2.4 is on the live site until that happens.
+
+**How the code behaves if the migration had NOT been run:** the Insights link never appears and nothing else changes — `js/profile.js` treats a missing `admins` table as "not an admin". Deploy order therefore never mattered.
 
 ## On hold
 
