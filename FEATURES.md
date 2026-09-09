@@ -4,6 +4,8 @@ Bite Book is a personal food-journaling app for a family and their close circle:
 
 This document has two parts: a **Feature List** (what the app can do, at a glance) and a **Functionality List** (how each part actually works, page by page). See `ROADMAP.md` for what shipped when, what's on hold, and what's proposed but not built yet; see `VISION.md` for the why behind the what.
 
+> **Everything below is built and deployed.** That is the entire job of this file, and it is worth stating plainly now that presentation material exists which runs ahead of the product. The family pitch deck (`BiteBook_Pitch_002.pptx`) and the landing-page mockup (`bitebook_site_014.html`) both describe features that are not in the codebase — a header search box, a Family Dish Duel, a "Want to Try" wishlist, a Memory Graph, restaurant-menu lookup, and a reservation agent among them. None of those appear here, and none should be added until they ship. When the two disagree, this file is right and the deck is aspirational; `ROADMAP.md` carries the full list under "Where the story runs ahead of the product."
+
 ---
 
 ## Feature List
@@ -102,6 +104,8 @@ Currently used for cross-user duplicate-entry resolution (see above); a 🔔 bad
 
 ### Landing Page — [index.html](index.html)
 Hero with a "Start My First Entry" call to action (into Smart Entry), a before/after section showing a plain photo-and-caption turning into a warm "scrapbook card" record, a 3-step "how it works" explainer, and a preview of everything an entry can capture. `js/index-gate.js` only redirects away from this page on a genuine auth callback (an invite/magic-link/confirmation arriving with the right hash or query params) — an ordinary visit while signed in (a bookmark, the logo, a shared link) keeps the landing page and simply retargets its calls-to-action at the journal ("🍽️ Open My Journal") or profile setup ("👋 Finish Setting Up"), whichever applies.
+
+A full redesign of this page exists as a mockup (`bitebook_site_014.html`, 2026-09-08) and is **not** deployed — it is roughly three times the length of the live page and leads with four features the app doesn't have. See `ROADMAP.md` before treating any of it as current.
 
 ### Header — [js/partials.js](js/partials.js)
 Built from the visitor's actual session on every page, not from whether that page happens to require login. Signed out: brand + a plain "Sign in / ✨ Get Started" — no links that would just bounce to a login wall. Signed in: the full app nav (My Entries, Quick Log, Full Form, New Entry, notifications bell with a pending-count badge, avatar, sign out).
