@@ -23,7 +23,7 @@ Every one of these is run by hand in the Supabase SQL editor; nothing runs them 
 | `007_count_trip_shares.sql` | Replaces `admin_funnel()` so trip shares count as shares | ✅ 2026-09-09 |
 | `008_wishlist.sql` | The "Want to Try" table | ✅ 2026-09-09 |
 | `009_roles.sql` | `user_roles` table, `bb_my_access()`, admin role controls | ✅ 2026-09-09 |
-| `010_menu_and_patterns.sql` | Menu provenance columns; `drinks`, `city`, `country` | ❌ **not yet run** |
+| `010_menu_and_patterns.sql` | Menu provenance columns; `drinks`, `city`, `country` | ✅ 2026-09-10 |
 
 A note for whoever runs the next one: **the SQL editor reports "0 rows" for almost everything in this list, and that is success, not failure.** An `insert` returns no rows; so does `create table`, `create function` and `create policy`. A real failure shows up as a red error message, not a row count. To confirm a table actually exists, list them:
 
