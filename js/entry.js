@@ -11,6 +11,7 @@ document.addEventListener('bitebook:ready', async () => {
   const savedToast = document.getElementById('saved-toast');
   const autosaveHint = document.getElementById('autosave-hint');
 
+  let menuLookup = null;
   let selectedMealType = null;
   let selectedCuisine = null;
   let mealTypeAutoPicked = false;
@@ -96,6 +97,11 @@ document.addEventListener('bitebook:ready', async () => {
   cuisineOtherInput.addEventListener('input', () => scheduleSave());
 
   foodInput.addEventListener('input', () => {
+    // Typing over a menu name makes it theirs again, so the entry should
+    // stop claiming the restaurant wrote it.
+    if (cachedEntry && cachedEntry.foodSource === 'menu' && foodInput.value.trim() !== cachedEntry.food) {
+      cachedEntry = { ...cachedEntry, foodSource: null, menuUrl: null, menuDishDescription: null };
+    }
     if (foodInput.value.trim().length > 0) {
       showMealSection();
       if (!selectedMealType) {
@@ -129,6 +135,9 @@ document.addEventListener('bitebook:ready', async () => {
       mealType: selectedMealType,
       mealTypeAutoPicked,
       cuisine: cuisine || null,
+      foodSource: existing.foodSource || null,
+      menuUrl: existing.menuUrl || null,
+      menuDishDescription: existing.menuDishDescription || null,
       status: 'draft',
       createdAt: createdAt || existing.createdAt || now,
       updatedAt: now,
@@ -172,6 +181,43 @@ document.addEventListener('bitebook:ready', async () => {
 
   entryId = resolveEntryId();
   await restoreFromStorage();
+
+  // Only useful once the entry knows where it was eaten — a menu needs a
+  // restaurant. On a brand-new entry that comes later in the wizard, so the
+  // button stays hidden until there is somewhere to look up.
+  //
+  // Description only here, deliberately: by this point a photo lives in
+  // Storage behind a signed URL rather than in memory, and fetching it back
+  // just to send it on is a lot of work for a small gain. Smart Entry, where
+  // the photo IS still in memory, does the picture-matching version.
+  menuLookup = BiteBookMenuLookup.mount('menu-lookup', {
+    getPlace: () => ({
+      name: cachedEntry && cachedEntry.placeName,
+      address: cachedEntry && cachedEntry.placeAddress,
+      city: cachedEntry && cachedEntry.city,
+    }),
+    getDescription: () => [
+      foodInput.value.trim(),
+      cachedEntry && cachedEntry.reflection,
+    ].filter(Boolean).join('. '),
+    onPick: (dish, result) => {
+      foodInput.value = dish.name;
+      cachedEntry = {
+        ...(cachedEntry || {}),
+        foodSource: 'menu',
+        menuUrl: result.menuUrl || null,
+        menuDishDescription: dish.description || null,
+      };
+      showMealSection();
+      if (!selectedMealType) {
+        mealTypeAutoPicked = true;
+        selectMealChip(guessMealType(), true);
+      }
+      showCuisineSection();
+      updateContinueState();
+      scheduleSave();
+    },
+  });
 
   continueBtn.addEventListener('click', async () => {
     await saveNow();

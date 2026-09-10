@@ -21,6 +21,8 @@ document.addEventListener('bitebook:ready', async () => {
   let selectedPlaceType = null;
   let placeSource = 'manual';
   let coords = null;
+  let geoCity = null;
+  let geoCountry = null;
   let inferredCuisine = null;
 
   function debounce(fn, delay) {
@@ -47,6 +49,8 @@ document.addEventListener('bitebook:ready', async () => {
       placeType: placeType || null,
       placeSource,
       coords,
+      city: geoCity || existing.city || null,
+      country: geoCountry || existing.country || null,
       createdAt: createdAt || existing.createdAt || now,
       updatedAt: now,
     };
@@ -149,6 +153,8 @@ document.addEventListener('bitebook:ready', async () => {
         try {
           const data = await reverseGeocodeLookup(lat, lon);
           const context = inferPlaceContext(data, coords);
+          geoCity = cityFromGeocode(data);
+          geoCountry = countryFromGeocode(data);
 
           if (context.isHome) {
             const profile = BiteBookProfile.get();

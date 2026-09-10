@@ -34,6 +34,31 @@ function shortAddressFromGeocode(data) {
   return parts.length ? parts.join(', ') : data.display_name || '';
 }
 
+// Nominatim names the same thing four different ways depending on how built-up
+// the area is, so try them in order of how specific they are. Used by the
+// patterns page to group meals by place without re-parsing a free-text address.
+function cityFromGeocode(data) {
+  const a = (data && data.address) || {};
+  return a.city || a.town || a.village || a.municipality || a.suburb || a.county || null;
+}
+
+function countryFromGeocode(data) {
+  const a = (data && data.address) || {};
+  return a.country || null;
+}
+
+// Best-effort fallback for entries logged before city/country were captured.
+// shortAddressFromGeocode() writes "road, locality, state", so the middle
+// piece is usually the town. A guess, and treated as one: anything this can't
+// work out simply doesn't appear in the place breakdown.
+function cityFromSavedAddress(address) {
+  if (!address) return null;
+  const parts = String(address).split(',').map((p) => p.trim()).filter(Boolean);
+  if (parts.length >= 3) return parts[parts.length - 2] || null;
+  if (parts.length === 2) return parts[1] || null;
+  return null;
+}
+
 function distanceMeters(lat1, lon1, lat2, lon2) {
   const R = 6371000;
   const toRad = (d) => (d * Math.PI) / 180;

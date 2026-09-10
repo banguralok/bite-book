@@ -1,5 +1,6 @@
 document.addEventListener('bitebook:ready', async () => {
   const textInput = document.getElementById('ingredients-text');
+  const drinksInput = document.getElementById('drinks-text');
   const linkInput = document.getElementById('ingredients-link');
   const linkBadge = document.getElementById('link-platform-badge');
   const fileUploadBtn = document.getElementById('file-upload-btn');
@@ -37,6 +38,7 @@ document.addEventListener('bitebook:ready', async () => {
       ...existing,
       id: entryId,
       ingredientsText: textInput.value.trim() || null,
+      drinks: drinksInput.value.trim() || null,
       ingredientsLink: normalizeLinkInput(linkInput.value),
       ingredientsFile: currentFile,
       createdAt: createdAt || existing.createdAt || now,
@@ -85,6 +87,8 @@ document.addEventListener('bitebook:ready', async () => {
     linkBadge.classList.toggle('visible', !!linkInput.value.trim());
     scheduleSave();
   });
+
+  drinksInput.addEventListener('input', () => scheduleSave());
 
   linkInput.addEventListener('blur', () => {
     const value = linkInput.value.trim();
@@ -139,6 +143,7 @@ document.addEventListener('bitebook:ready', async () => {
     createdAt = existing.createdAt;
 
     if (existing.ingredientsText) textInput.value = existing.ingredientsText;
+    if (existing.drinks) drinksInput.value = existing.drinks;
     if (existing.ingredientsLink) {
       linkInput.value = existing.ingredientsLink;
       linkBadge.textContent = linkPlatformLabel(existing.ingredientsLink);

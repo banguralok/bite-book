@@ -20,7 +20,7 @@ document.addEventListener('bitebook:ready', () => {
   const editBtn = document.getElementById('smart-entry-edit-btn');
 
   let photo = null;
-  let capturedPlace = null; // {name, address, coords, placeType, cuisine} from "Tag My Location"
+  let capturedPlace = null; // {name, address, coords, placeType, cuisine, city, country} from "Tag My Location"
   let pendingEntry = null;
 
   function geoErrorMessage(err) {
@@ -46,6 +46,8 @@ document.addEventListener('bitebook:ready', () => {
         try {
           const data = await reverseGeocodeLookup(lat, lon);
           const context = inferPlaceContext(data, coords);
+          const geoCity = cityFromGeocode(data);
+          const geoCountry = countryFromGeocode(data);
           const profile = (typeof BiteBookProfile !== 'undefined') ? BiteBookProfile.get() : null;
 
           if (context.isHome) {
@@ -53,6 +55,7 @@ document.addEventListener('bitebook:ready', () => {
               name: (profile && profile.homeAddress) ? 'Home' : (placeNameFromGeocode(data) || 'Home'),
               address: (profile && profile.homeAddress) || shortAddressFromGeocode(data),
               coords, placeType: 'home', cuisine: null,
+              city: geoCity, country: geoCountry,
             };
             geoStatus.textContent = '📍 Looks like home.';
           } else {
@@ -62,11 +65,12 @@ document.addEventListener('bitebook:ready', () => {
               coords,
               placeType: context.placeType || null,
               cuisine: context.cuisine || null,
+              city: geoCity, country: geoCountry,
             };
             geoStatus.textContent = capturedPlace.name ? `📍 Tagged: ${capturedPlace.name}` : '📍 Location tagged.';
           }
         } catch (e) {
-          capturedPlace = { name: null, address: `${lat.toFixed(5)}, ${lon.toFixed(5)}`, coords, placeType: null, cuisine: null };
+          capturedPlace = { name: null, address: `${lat.toFixed(5)}, ${lon.toFixed(5)}`, coords, placeType: null, cuisine: null, city: null, country: null };
           geoStatus.textContent = "📍 Got your coordinates, but couldn't look up the address.";
         }
         geoBtn.disabled = false;
@@ -202,7 +206,10 @@ document.addEventListener('bitebook:ready', () => {
       placeType,
       placeAddress: (!result.placeName && capturedPlace) ? capturedPlace.address : null,
       placeSource: result.placeName ? 'ai' : (capturedPlace ? 'geolocation' : null),
+      drinks: result.drinks || null,
       coords: (capturedPlace && capturedPlace.coords) || null,
+      city: (capturedPlace && capturedPlace.city) || null,
+      country: (capturedPlace && capturedPlace.country) || null,
       companionTypes,
       companionFamilyIds: mentionedFamilyIds,
       companionNames: result.companionNames || null,
@@ -232,8 +239,12 @@ document.addEventListener('bitebook:ready', () => {
     if (companionText) bits.push(`👥 ${escapeHtmlSmart(companionText)}`);
     if (entry.rating) bits.push(ratingStarsLabel(entry.rating));
 
+    const fromMenu = entry.foodSource === 'menu'
+      ? `<span class="menu-badge">${BiteBookIcons.svg('check')} from their menu</span>`
+      : '';
+
     return `
-      <h3>${escapeHtmlSmart(entry.food || 'Untitled entry')}</h3>
+      <h3>${escapeHtmlSmart(entry.food || 'Untitled entry')} ${fromMenu}</h3>
       ${bits.length ? `<p style="margin-top: 8px;">${bits.join(' &nbsp;·&nbsp; ')}</p>` : ''}
       ${entry.reflection ? `<p class="scrapbook-quote" style="margin-top: 14px;">"${escapeHtmlSmart(entry.reflection)}"</p>` : ''}
     `;
@@ -244,6 +255,37 @@ document.addEventListener('bitebook:ready', () => {
     confirmCard.innerHTML = buildConfirmCardHtml(entry);
     actionsRow.style.display = 'none';
     confirmWrap.style.display = 'block';
+
+    // This is the one place in the app where the photo is still in memory as
+    // a data URL, so it is the only place the picture can be matched against
+    // a real menu. Once saved, the photo lives behind a signed URL in
+    // Storage and only the description is available.
+    if (typeof BiteBookMenuLookup !== 'undefined') {
+      BiteBookMenuLookup.mount('menu-lookup-smart', {
+        getPlace: () => ({
+          name: pendingEntry && pendingEntry.placeName,
+          address: pendingEntry && pendingEntry.placeAddress,
+          city: pendingEntry && pendingEntry.city,
+        }),
+        getDescription: () => [
+          pendingEntry && pendingEntry.food,
+          textInput.value.trim(),
+        ].filter(Boolean).join('. '),
+        getPhoto: () => (photo && photo.dataUrl) || null,
+        onPick: async (dish, result) => {
+          pendingEntry = {
+            ...pendingEntry,
+            food: dish.name,
+            foodSource: 'menu',
+            menuUrl: result.menuUrl || null,
+            menuDishDescription: dish.description || null,
+            updatedAt: new Date().toISOString(),
+          };
+          confirmCard.innerHTML = buildConfirmCardHtml(pendingEntry);
+          await BiteBookStorage.saveEntry(pendingEntry);
+        },
+      });
+    }
   }
 
   submitBtn.addEventListener('click', async () => {

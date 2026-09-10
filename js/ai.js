@@ -20,6 +20,7 @@ const BiteBookAI = (() => {
       reason: { type: 'STRING', nullable: true, enum: ['birthday', 'anniversary', 'celebration', 'comfort', 'craving', 'requested', 'everyday', 'other'] },
       reasonOther: { type: 'STRING', nullable: true },
       ingredientsText: { type: 'STRING', nullable: true },
+      drinks: { type: 'STRING', nullable: true, description: 'Anything they drank, comma separated. Only if actually mentioned.' },
       likedQualities: { type: 'ARRAY', nullable: true, items: { type: 'STRING', enum: ['delicious', 'spice-level', 'healthy', 'indulgent', 'comforting', 'refreshing', 'texture', 'sweet', 'nostalgic', 'new', 'love', 'other'] } },
       likedOther: { type: 'STRING', nullable: true },
       rating: { type: 'INTEGER', nullable: true },
@@ -64,6 +65,16 @@ const BiteBookAI = (() => {
   // responds 200 with an {ok, ...} envelope, so `error` here only ever
   // means "couldn't reach the proxy at all" — a Gemini-side failure (bad
   // key, rate limit, model error) shows up as `data.ok === false` instead.
+  // The most recent raw Gemini response. Search grounding returns its
+  // source URLs in groundingMetadata, which sits alongside the text rather
+  // than inside it, so menu lookup needs the whole candidate — not the one
+  // text part callGemini returns.
+  let lastRawResponse = null;
+
+  function rawResponse() {
+    return lastRawResponse;
+  }
+
   async function callGemini(body) {
     const { data, error } = await supabaseClient.functions.invoke('gemini-proxy', { body });
 
@@ -94,6 +105,7 @@ const BiteBookAI = (() => {
     }
 
     const geminiData = data.body;
+    lastRawResponse = geminiData;
     const textPart = geminiData
       && geminiData.candidates
       && geminiData.candidates[0]
@@ -306,6 +318,120 @@ const BiteBookAI = (() => {
     }
   }
 
+  // ---------- menu lookup ----------
+
+  // Asks Gemini, with Google Search switched on, to find the restaurant's
+  // OWN menu and match what the person actually ate against it.
+  //
+  // Grounding is the whole point. Without it a model asked "what's on the
+  // menu at Saffron" will invent plausible dishes, and an invented dish name
+  // saved into a food memory is worse than the paraphrase it replaced. With
+  // it, every candidate can be traced back to the page it came from, and the
+  // page is shown to the person before they pick.
+  //
+  // Deliberately NOT using responseSchema here: structured output and the
+  // search tool don't reliably coexist, so the prompt asks for JSON and the
+  // parser below is lenient about fences and stray prose.
+  function buildMenuPrompt(place, description) {
+    return [
+      'You are helping someone name a dish correctly in their food journal.',
+      '',
+      `RESTAURANT: ${place.name || 'unknown'}`,
+      place.address ? `ADDRESS: ${place.address}` : '',
+      place.city ? `CITY: ${place.city}` : '',
+      '',
+      'WHAT THEY SAID THEY ATE:',
+      description || '(nothing written — go on the photo alone)',
+      '',
+      'TASK:',
+      "1. Use Google Search to find THIS restaurant's own website and its menu page. Prefer the restaurant's own domain over aggregators, review sites or delivery apps.",
+      '2. Read the dish names exactly as that menu writes them — do not translate, tidy, expand or invent them.',
+      '3. Compare the description above (and the photo, if one is attached) against those dishes.',
+      '4. Return the closest matches, best first, at most 5.',
+      '',
+      'RULES:',
+      '- Never invent a dish. If you cannot find a real menu for this restaurant, return an empty list and say so in "note".',
+      '- Every dish you return must appear on a page you actually found.',
+      '- "confidence" is how well it matches what they described, not how sure you are the menu is real.',
+      '- If the menu exists but nothing on it resembles the description, return the empty list rather than a poor guess.',
+      '',
+      'Reply with ONLY this JSON, no other text:',
+      '{"menuUrl": "<the menu page you used, or null>",',
+      ' "note": "<one short sentence: what you found, or why you found nothing>",',
+      ' "dishes": [{"name": "<exact name from the menu>",',
+      '             "description": "<the menu\'s own description, or null>",',
+      '             "confidence": "high|medium|low"}]}',
+    ].filter(Boolean).join('\n');
+  }
+
+  // Tolerates a fenced code block or a sentence of preamble, because a
+  // grounded reply isn't constrained by a response schema.
+  function parseLooseJson(text) {
+    const fenced = /```(?:json)?\s*([\s\S]*?)```/.exec(text);
+    const candidate = fenced ? fenced[1] : text;
+    const start = candidate.indexOf('{');
+    const end = candidate.lastIndexOf('}');
+    if (start === -1 || end === -1 || end <= start) return null;
+    try {
+      return JSON.parse(candidate.slice(start, end + 1));
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function groundingSources() {
+    const raw = rawResponse();
+    const meta = raw && raw.candidates && raw.candidates[0] && raw.candidates[0].groundingMetadata;
+    const chunks = (meta && meta.groundingChunks) || [];
+    const seen = new Set();
+    const out = [];
+    chunks.forEach((chunk) => {
+      const web = chunk && chunk.web;
+      if (!web || !web.uri || seen.has(web.uri)) return;
+      seen.add(web.uri);
+      out.push({ uri: web.uri, title: web.title || web.uri });
+    });
+    return out;
+  }
+
+  async function findMenuMatches(place, description, photoDataUrl) {
+    const parts = [{ text: buildMenuPrompt(place, description) }];
+    if (photoDataUrl) {
+      const match = /^data:([^;]+);base64,(.+)$/.exec(photoDataUrl);
+      if (match) parts.push({ inlineData: { mimeType: match[1], data: match[2] } });
+    }
+
+    const textPart = await callGemini({
+      contents: [{ parts }],
+      tools: [{ google_search: {} }],
+    });
+
+    const parsed = parseLooseJson(textPart);
+    if (!parsed) {
+      const err = new Error('Could not read the menu results.');
+      err.code = 'PARSE_ERROR';
+      throw err;
+    }
+
+    const sources = groundingSources();
+    const dishes = Array.isArray(parsed.dishes) ? parsed.dishes : [];
+
+    return {
+      menuUrl: parsed.menuUrl && isSafeUrl(parsed.menuUrl) ? parsed.menuUrl : null,
+      note: parsed.note || '',
+      sources,
+      // A dish with no name is noise; drop it rather than render a blank chip.
+      dishes: dishes
+        .filter((d) => d && typeof d.name === 'string' && d.name.trim())
+        .slice(0, 5)
+        .map((d) => ({
+          name: d.name.trim(),
+          description: (typeof d.description === 'string' && d.description.trim()) || null,
+          confidence: ['high', 'medium', 'low'].includes(d.confidence) ? d.confidence : 'low',
+        })),
+    };
+  }
+
   function friendlyErrorMessage(err) {
     if (err && err.code === 'MODEL_ERROR') {
       return "The AI model isn't available right now — this app may need a small update.";
@@ -329,5 +455,7 @@ const BiteBookAI = (() => {
     semanticSearchEntries,
     findDuplicatePlaces,
     friendlyErrorMessage,
+    findMenuMatches,
+    rawResponse,
   };
 })();

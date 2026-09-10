@@ -17,6 +17,8 @@ document.addEventListener('bitebook:ready', async () => {
     madeBy: null,
     cuisine: null,
     coords: null,
+    city: null,
+    country: null,
   };
 
   captureWhen.textContent = `Today · ${mealTypeLabel(captured.mealType)} · ${timeOfDayLabel(captured.timeOfDay)}`;
@@ -43,6 +45,8 @@ document.addEventListener('bitebook:ready', async () => {
         try {
           const data = await reverseGeocodeLookup(lat, lon);
           const context = inferPlaceContext(data, captured.coords);
+          captured.city = cityFromGeocode(data);
+          captured.country = countryFromGeocode(data);
 
           if (context.isHome) {
             captured.placeType = 'home';
@@ -103,6 +107,8 @@ document.addEventListener('bitebook:ready', async () => {
       placeType: captured.placeType,
       placeSource: captured.coords ? 'geolocation' : null,
       coords: captured.coords,
+      city: captured.city,
+      country: captured.country,
       madeBy: captured.madeBy,
       status: 'draft',
       createdAt: now,

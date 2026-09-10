@@ -153,6 +153,10 @@ document.addEventListener('bitebook:ready', async () => {
   const urlParams = new URLSearchParams(window.location.search);
   const personFilter = urlParams.get('person');
   const placeFilter = urlParams.get('place');
+  const dateFilter = urlParams.get('date');
+  const cityFilter = urlParams.get('city');
+  const countryFilter = urlParams.get('country');
+  const occasionFilter = urlParams.get('occasion');
   if (urlParams.get('q')) searchInput.value = urlParams.get('q');
   let hiddenIds = new Set();
   let pendingDelete = null;
@@ -210,12 +214,27 @@ document.addEventListener('bitebook:ready', async () => {
     return names.some((n) => String(n).trim().toLowerCase() === needle);
   }
 
+  // Older entries have no city column; fall back to the saved address the same
+  // way the patterns page does, so a link from there finds the same meals.
+  function entryCity(entry) {
+    if (entry.city) return entry.city;
+    if (typeof cityFromSavedAddress === 'function') return cityFromSavedAddress(entry.placeAddress);
+    return null;
+  }
+
   function renderActiveFilter() {
     const el = document.getElementById('active-filter');
     if (!el) return;
-    const active = personFilter
-      ? { icon: 'person', label: `Meals with ${personFilter}` }
-      : (placeFilter ? { icon: 'pin', label: `Meals at ${placeFilter}` } : null);
+    let active = null;
+    if (personFilter) active = { icon: 'person', label: `Meals with ${personFilter}` };
+    else if (placeFilter) active = { icon: 'pin', label: `Meals at ${placeFilter}` };
+    else if (dateFilter) active = { icon: 'calendar', label: formatDateLabel(dateFilter) };
+    else if (cityFilter) active = { icon: 'pin', label: `Meals in ${cityFilter}` };
+    else if (countryFilter) active = { icon: 'pin', label: `Meals in ${countryFilter}` };
+    else if (occasionFilter) {
+      const label = (typeof reasonLabel === 'function' ? reasonLabel(occasionFilter) : occasionFilter) || occasionFilter;
+      active = { icon: 'star', label: `Meals for ${label.replace(/^[^ ]+ /, '')}` };
+    }
     if (!active) {
       el.style.display = 'none';
       return;
@@ -240,6 +259,10 @@ document.addEventListener('bitebook:ready', async () => {
     if (statusFilter === 'draft' && entry.status === 'complete') return false;
     if (personFilter && !entryInvolvesPerson(entry, personFilter)) return false;
     if (placeFilter && String(entry.placeName || '').trim().toLowerCase() !== placeFilter.trim().toLowerCase()) return false;
+    if (dateFilter && entry.ateOn !== dateFilter) return false;
+    if (cityFilter && String(entryCity(entry) || '').trim().toLowerCase() !== cityFilter.trim().toLowerCase()) return false;
+    if (countryFilter && String(entry.country || '').trim().toLowerCase() !== countryFilter.trim().toLowerCase()) return false;
+    if (occasionFilter && entry.reason !== occasionFilter) return false;
     if (query) {
       const substringMatch = searchableText(entry).includes(query);
       const smartMatch = !!(smartSearchIds && smartSearchForQuery === query && smartSearchIds.has(entry.id));

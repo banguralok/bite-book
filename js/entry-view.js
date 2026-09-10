@@ -84,6 +84,19 @@ function buildStoryHtml(entry, ctx) {
   const sections = [];
   const stepHref = (page) => (isOwner ? `${page}?id=${encodeURIComponent(entry.id)}` : null);
 
+  // A name taken off a restaurant's menu says so, and links to where it came
+  // from. Without this the archive would quietly contain web-sourced facts
+  // indistinguishable from things the family wrote themselves.
+  if (entry.foodSource === 'menu') {
+    const link = entry.menuUrl && isSafeUrl(entry.menuUrl)
+      ? ` <a href="${escapeHtmlView(entry.menuUrl)}" target="_blank" rel="noopener noreferrer">see the menu ↗</a>`
+      : '';
+    sections.push(section('📋', "The Restaurant's Own Words", `
+      ${entry.menuDishDescription ? `<p>${escapeHtmlView(entry.menuDishDescription)}</p>` : ''}
+      <p class="field-sublabel" style="margin-top:8px;">This dish name was taken from the restaurant's menu, not written by hand.${link}</p>
+    `, null));
+  }
+
   const placeBits = [entry.placeName, entry.placeAddress].filter(Boolean).join(' — ');
   if (placeBits || entry.placeType) {
     sections.push(section('📍', 'Where', `
@@ -122,6 +135,10 @@ function buildStoryHtml(entry, ctx) {
       inner += `<p><a href="${f.url}" download="${escapeHtmlView(f.name)}">${fileKindIcon(f.type)} ${escapeHtmlView(f.name)} — download</a></p>`;
     }
     sections.push(section('🥕', 'What Went Into It', inner, stepHref('entry-ingredients.html')));
+  }
+
+  if (entry.drinks) {
+    sections.push(section('🥤', 'And To Drink', `<p>${escapeHtmlView(entry.drinks)}</p>`, stepHref('entry-ingredients.html')));
   }
 
   const likedTypes = entry.likedQualities || [];
