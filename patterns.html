@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=5">
+<link rel="stylesheet" href="css/style.css?v=6">
 </head>
 <body>
 
@@ -44,6 +44,7 @@
     <button type="button" class="lens-tab selected" role="tab" aria-selected="true" data-lens="rhythm">When you eat</button>
     <button type="button" class="lens-tab" role="tab" aria-selected="false" data-lens="what">What you have</button>
     <button type="button" class="lens-tab" role="tab" aria-selected="false" data-lens="where">Where &amp; why</button>
+    <button type="button" class="lens-tab" role="tab" aria-selected="false" data-lens="years">Across the years</button>
   </nav>
 
   <div id="pattern-empty" class="empty-state" style="display: none;">
@@ -85,6 +86,25 @@
     </div>
   </section>
 
+  <section class="lens-panel" id="lens-years" hidden>
+    <div class="chart-card">
+      <h2 class="chart-title">Every year you've logged</h2>
+      <p class="chart-sub">One row per year, one cell per month. Darker months are busier ones.</p>
+      <div id="year-grid"></div>
+    </div>
+
+    <div class="chart-card">
+      <h2 class="chart-title">Everyday meals against the special ones</h2>
+      <p class="chart-sub">A meal counts as special when it was logged for an occasion — a birthday, an anniversary, a celebration.</p>
+      <div id="year-occasions"></div>
+    </div>
+
+    <div class="chart-card">
+      <h2 class="chart-title">Year by year</h2>
+      <div id="year-compare"></div>
+    </div>
+  </section>
+
   <section class="lens-panel" id="lens-where" hidden>
     <div class="chart-card">
       <h2 class="chart-title">Towns and cities</h2>
@@ -116,9 +136,10 @@
 <script src="js/track.js?v=1"></script>
 <script src="js/profile.js?v=4"></script>
 <script src="js/geo.js?v=3"></script>
-<script src="js/storage.js?v=4"></script>
+<script src="js/storage.js?v=5"></script>
 <script src="js/labels.js?v=2"></script>
 <script src="js/search.js?v=1"></script>
-<script src="js/patterns.js?v=1"></script>
+<script src="js/nudges.js?v=1"></script>
+<script src="js/patterns.js?v=2"></script>
 </body>
 </html>

@@ -157,6 +157,7 @@ document.addEventListener('bitebook:ready', async () => {
   const cityFilter = urlParams.get('city');
   const countryFilter = urlParams.get('country');
   const occasionFilter = urlParams.get('occasion');
+  const monthFilter = urlParams.get('month');
   if (urlParams.get('q')) searchInput.value = urlParams.get('q');
   let hiddenIds = new Set();
   let pendingDelete = null;
@@ -229,6 +230,10 @@ document.addEventListener('bitebook:ready', async () => {
     if (personFilter) active = { icon: 'person', label: `Meals with ${personFilter}` };
     else if (placeFilter) active = { icon: 'pin', label: `Meals at ${placeFilter}` };
     else if (dateFilter) active = { icon: 'calendar', label: formatDateLabel(dateFilter) };
+    else if (monthFilter) {
+      const d = parseDateInputValue(`${monthFilter}-01`);
+      active = { icon: 'calendar', label: d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' }) };
+    }
     else if (cityFilter) active = { icon: 'pin', label: `Meals in ${cityFilter}` };
     else if (countryFilter) active = { icon: 'pin', label: `Meals in ${countryFilter}` };
     else if (occasionFilter) {
@@ -260,6 +265,7 @@ document.addEventListener('bitebook:ready', async () => {
     if (personFilter && !entryInvolvesPerson(entry, personFilter)) return false;
     if (placeFilter && String(entry.placeName || '').trim().toLowerCase() !== placeFilter.trim().toLowerCase()) return false;
     if (dateFilter && entry.ateOn !== dateFilter) return false;
+    if (monthFilter && String(entry.ateOn || '').slice(0, 7) !== monthFilter) return false;
     if (cityFilter && String(entryCity(entry) || '').trim().toLowerCase() !== cityFilter.trim().toLowerCase()) return false;
     if (countryFilter && String(entry.country || '').trim().toLowerCase() !== countryFilter.trim().toLowerCase()) return false;
     if (occasionFilter && entry.reason !== occasionFilter) return false;

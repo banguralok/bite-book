@@ -432,6 +432,60 @@ const BiteBookAI = (() => {
     };
   }
 
+  // ---------- the web tier of recommendations ----------
+  // Same grounded-search machinery as menu lookup, and the same reason for it:
+  // an ungrounded model asked "good Thai in Edison" will confidently name
+  // restaurants that closed in 2019 or never existed. Grounded, every
+  // suggestion carries the page it came from and the person can check it.
+  function buildPlacesPrompt(city, want) {
+    return [
+      'Someone is deciding where to eat and wants suggestions from the open web.',
+      '',
+      `TOWN OR CITY: ${city || 'unspecified'}`,
+      want ? `WHAT THEY FEEL LIKE: ${want}` : '',
+      '',
+      'TASK: use Google Search to find real, currently-open places that fit.',
+      '',
+      'RULES:',
+      '- Only places you actually found on a page. Never invent one.',
+      '- If you cannot confirm a place is still open, leave it out.',
+      '- At most 5. Fewer is fine.',
+      '- "why" is one short sentence about the food, not marketing copy.',
+      '',
+      'Reply with ONLY this JSON, no other text:',
+      '{"note": "<one sentence on what you searched>",',
+      ' "places": [{"name": "<name>", "why": "<one sentence>", "cuisine": "<short label or null>"}]}',
+    ].filter(Boolean).join('\n');
+  }
+
+  async function findPlacesOnTheWeb(city, want) {
+    const textPart = await callGemini({
+      contents: [{ parts: [{ text: buildPlacesPrompt(city, want) }] }],
+      tools: [{ google_search: {} }],
+    });
+
+    const parsed = parseLooseJson(textPart);
+    if (!parsed) {
+      const err = new Error('Could not read the suggestions.');
+      err.code = 'PARSE_ERROR';
+      throw err;
+    }
+
+    const places = Array.isArray(parsed.places) ? parsed.places : [];
+    return {
+      note: parsed.note || '',
+      sources: groundingSources(),
+      places: places
+        .filter((p) => p && typeof p.name === 'string' && p.name.trim())
+        .slice(0, 5)
+        .map((p) => ({
+          name: p.name.trim(),
+          why: (typeof p.why === 'string' && p.why.trim()) || null,
+          cuisine: (typeof p.cuisine === 'string' && p.cuisine.trim()) || null,
+        })),
+    };
+  }
+
   function friendlyErrorMessage(err) {
     if (err && err.code === 'MODEL_ERROR') {
       return "The AI model isn't available right now — this app may need a small update.";
@@ -456,6 +510,7 @@ const BiteBookAI = (() => {
     findDuplicatePlaces,
     friendlyErrorMessage,
     findMenuMatches,
+    findPlacesOnTheWeb,
     rawResponse,
   };
 })();

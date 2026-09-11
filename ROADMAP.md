@@ -24,6 +24,7 @@ Every one of these is run by hand in the Supabase SQL editor; nothing runs them 
 | `008_wishlist.sql` | The "Want to Try" table | ✅ 2026-09-09 |
 | `009_roles.sql` | `user_roles` table, `bb_my_access()`, admin role controls | ✅ 2026-09-09 |
 | `010_menu_and_patterns.sql` | Menu provenance columns; `drinks`, `city`, `country` | ✅ 2026-09-10 |
+| `011_recommendations.sql` | `place_reputation` view (3-household floor), `bb_recommend_places()`, `wishlist.city` | ❌ **not yet run** |
 
 A note for whoever runs the next one: **the SQL editor reports "0 rows" for almost everything in this list, and that is success, not failure.** An `insert` returns no rows; so does `create table`, `create function` and `create policy`. A real failure shows up as a red error message, not a row count. To confirm a table actually exists, list them:
 
@@ -123,6 +124,24 @@ Colour was computed, not chosen: one orange ramp for magnitude (validated for mo
 
 **Honest limits.** `city` and `country` are only captured for meals logged from here on; older entries fall back to a guess parsed from their saved address, and anything unresolvable is left out rather than invented. `drinks` starts empty for every existing entry, so that chart says so instead of showing zero.
 
+### v2.8 — Ideas, Across the years, and Where should we eat — built 2026-09-11, **committed but not yet pushed**
+`js/nudges.js`, the years lens in `js/patterns.js`, `recommend.html` + `js/recommend.js`, migration `011_recommendations.sql`, and a seeded demo harness in `dev/`.
+
+**The seeded harness came first, and it is the reason the rest exists.** These three features need a history a three-week-old beta cannot have: three years, several countries, and enough households logging the same restaurants for an aggregate to mean anything. `dev/seed.js` invents ~1,200 meals across three years, four countries, seven towns, five trips and five households, on a fixed random seed so the dataset is identical every run. It loads only through `scripts/dev-server.py --demo`, which injects it server-side on the way out — so no page in the repo mentions the harness, there is no flag in the shipped app to flip by accident, and `/dev/*` is blocked at the CDN as a second line. Every demo page carries a DEMO DATA banner. **Nothing goes near the real database**: 1,200 invented meals in production would land in the Insights numbers that exist to measure whether real people come back.
+
+**Where should we eat (12).** Three tiers that never blend — your circle, other households in aggregate, then the open web — because those are three different kinds of claim and one ranked list would misprice all of them. The privacy boundary is the three-household floor, enforced in SQL rather than in the browser.
+
+**Ideas for you (8).** Four rules, each with a stated reason, on the Want to Try page as chosen. Shows nothing when nothing fires; a suggestion engine guaranteed to always have something to say is how an app becomes naggy.
+
+**Across the years (9).** A fourth lens on Patterns: year rows by month, everyday against occasions, and a year-by-year table.
+
+**Three bugs this round, and where each was caught — worth recording, because they argue for different kinds of testing:**
+1. *Only running the real SQL found it.* `min(place_name)` picked the alphabetically smallest spelling, so one sloppy row logged as `"  saffron "` made a 195-meal restaurant display in lower case with a leading space. Now `mode()` — the most common spelling. A browser test against the JavaScript stand-in would never have seen this; it took a throwaway Postgres, the real migration, and a deliberately messy row.
+2. *Only looking at the screen found it.* The circle tier recommended **Home** — your own kitchen, top of the list, because it is the most-visited place in any journal. Every test passed.
+3. *Only looking at the screen found it.* Two Ideas cards printed a word-for-word identical reason, because one occasion was being pinned to the top two wishes. De-duplication now covers reasons as well as wishes.
+
+**The SQL was verified by execution, not by reading.** A throwaway Postgres, the real migration file, the seeded rows, plus hand-built edge cases: two households stay hidden, exactly three appear, one household logging five times stays hidden, drafts and unrated meals don't count toward the floor, and the town filter tolerates case and whitespace.
+
 ## On hold
 
 - **Gamification** (points, levels, incentives) — paused explicitly by the user, 2026-09-03. Revisit once there's a concrete answer to "what's the actual incentive" (see Proposed, below). **Narrowed 2026-09-09:** logging streaks with food-named milestones shipped in v2.4, at the user's explicit direction and with the trade-off stated at the time ("not great of a feature to boast about, but it would make things a little more fun"). The hold now covers points, levels and competitive scoring — not a private, self-directed streak. Recorded here rather than left implicit, because the same question decides the Dish Duel below.
@@ -137,14 +156,14 @@ Colour was computed, not chosen: one orange ramp for magnitude (validated for mo
 
 - ❓ **Physical printed yearbook** — auto-compile a year's entries into a print-ready book. The product half (layout/compilation) is a normal feature; the commerce half (payment processing, a print-on-demand vendor, pricing, shipping/reprints) is a separate, much bigger decision that needs to be made explicitly before any code — this is not "add a feature" in the same sense as the rest of this list. **Update 2026-09-09:** the pricing half is now decided and is printed in the family deck — $119 for the yearbook, $189 as a gift with the year included. The commerce and fulfilment half is untouched, and the deck is being shown to people before any of it exists.
 - 💡 **Deeper "irreplaceable" mechanics** — the "Year in Review" half of this shipped in v2.5. What remains is the harder half the phrase was really pointing at: an archive that is worth more the longer it runs. That is not one feature, and it will not be built in a batch.
-- 💡 **"Want to Try" — the nudge half.** The list shipped in v2.5. What did not: nudging you when a trip to that area is being planned, which needs Trips to know about *future* dates. Today a trip is a container for meals already eaten, so this is a change to Trips before it is a change to the wishlist.
+- 💡 **"Want to Try" nudges — the trip half only.** Shipped in v2.8 as "Ideas for you", driven by upcoming occasions, the town you have been eating in, cuisine rhythm and how long a wish has waited. What is still not possible: nudging you when a trip to that area is being *planned*, because Trips only holds meals already eaten. That remains a Trips change before it is a wishlist one.
 - 💡 **Icon/graphic overhaul — remainder.** The targeted pass shipped in v2.4 (header, main buttons, empty states). Still open, and now an actual choice rather than a scope question: whether the ~40 emoji still used inside meal cards, story sections, wizard steps and chip labels should also become drawn icons. The argument for leaving them is in v2.4's note.
 - 💡 **Memory Graph** (previously "admin knowledge graph") of a food journey — special days vs. everyday, travel patterns, grouped and linked. The mockup settles the question that was blocking this: it draws a real interactive node graph ("drag any node, click to explore"), scoped to a single trip ("Lake Harmony · Sep 4–7") and shown to the **user**, not to an admin. That is a different and considerably more useful feature than the admin-analytics view originally proposed, and it makes Trips the natural place for it to live. Still needs a data model — what counts as a node (entry, person, place, dish?) and what an edge means — before it can be planned.
 - ~~**Power-user heat map**~~ — **shipped in v2.7** as Your Patterns, and deliberately NOT gated: the paid boundary agreed in v2.6 is sharing and family, not insight into your own food. Left visible to everyone.
 - 💡 **Notifications — the half that still needs infrastructure.** The in-app occasion banner shipped in v2.4. What remains genuinely needs things the app does not have: Web Push plus a server-side scheduler for a notification that arrives when Bite Book is *closed*, and location-triggered reminders, which a PWA cannot do at all. Overlaps the native-app item below — push is the honest reason to go native.
 - 💡 **Richer "memories"** (Google-Photos-style resurfacing, photo-forward, company/occasion-aware) — an evolution of On This Day rather than a new feature from scratch.
 - 💡 **Landing page / retention redesign** — "why would they come back". No longer an abstract intention: `bitebook_site_014.html` (2026-09-08) is a complete, self-contained redesign of `index.html`, roughly three times the current page. Beyond a visual refresh it drew four things the app did not have. **Two now exist** (header search and Want to Try, v2.5). **Two still do not**: the Dish Duel and the Memory Graph. The open question has narrowed usefully — ship the page with those two cut, or build them first. It is no longer a four-feature blocker.
-- 💡 **Location-based restaurant recommendations from other users' data** — the most ambitious item on the list; a real recommendation-engine feature (taste-similarity across users + live location matching), treated as a later-phase idea.
+- 💡 **Recommendations — the taste-similarity half.** The three tiers shipped in v2.8. What did not: matching on *taste similarity* ("families who like what you like also rate this"), which needs enough households for a similarity score to be more than noise, and live location matching. The aggregate tier is the honest version available at this size.
 - ~~**Gender/ethnicity as optional profile fields**~~ — **dropped 2026-09-09.** No feature reads them and no report groups by them, so the only certain outcome was a privacy obligation and one more field on the profile page. Revisit if and when something actually needs them.
 
 ### From the pitch deck and landing-page mockup — added 2026-09-09
@@ -153,9 +172,9 @@ Colour was computed, not chosen: one orange ramp for magnitude (validated for mo
 
 - ❓ **Family Dish Duel** — two dishes head to head, the family votes, and the result is weighted by who cooked it and who was there ("Family picked Butter Chicken · 9 of 14 votes"). Needs a decision before it can be planned, and not only a technical one: **this is a voting-and-scoring mechanic, and Gamification is explicitly on hold.** Either the hold is narrower than it reads, or this item is inside it. Worth resolving deliberately rather than letting a mockup quietly overturn a decision that was made on purpose.
 - 💡 **Reservation agent** — say where and when; it books the table, puts it on your calendar, and half-writes the entry in advance. The largest single item anywhere on this roadmap: it needs a booking integration, calendar write access, and an agent loop, none of which the app has any foundation for today.
-- 💡 **Tiered recommendations** — "where should we eat?" answered from your own circle first, then from other Bite Book users, then from the open web with an explicit caveat that the answer came from the web. This is the specific shape of the "location-based restaurant recommendations" item above, and the two should be merged when either is planned.
+- ~~**Tiered recommendations**~~ — **shipped in v2.8** exactly as described: circle, then other households, then the open web with the caveat stated on the page.
 - 💡 **Native mobile app with push notifications** — "a real app on your phone, so it can tap you on the shoulder." Overlaps the Notifications item above: the honest reason to go native is push, which a PWA cannot do reliably on iOS.
-- 💡 **Your food life, drawn out** — everyday meals plotted against special occasions across years, in one view. The single-year version shipped in v2.7; what remains is the multi-year comparison, which needs a multi-year history before it says anything.
+- ~~**Your food life, drawn out**~~ — **shipped in v2.8** as the "Across the years" lens. It needs years of real history to say anything true, which no account has yet; the seeded harness is how it was built and verified in the meantime.
 - ❓ **Pricing and packaging** — the deck says: Free forever for one person; $12.99/month or $99/year for up to 8 people; Yearbook $119; Yearbook as a gift $189. **Half of this now exists.** v2.6 built the plans, the boundary and the admin controls, and the seat numbers in `js/roles.js` are the deck's numbers. What is still entirely absent is **money**: no payment provider, no checkout, no subscription state, no renewal or failure handling, and no enforcement (deliberately off). The remaining decision is not what to charge — that is settled — but whether to take payments at all before there are users who want to pay.
 
 ## Where the story runs ahead of the product
@@ -165,3 +184,49 @@ Kept deliberately, because both artefacts are about to be shown to real people w
 - **Menu lookup, called out as near-term on the deck, shipped in v2.7.** The deck's "What's coming next" slide lists **voice capture** and **share straight to Instagram** as upcoming. Both shipped in v2.3 on 2026-09-07 — the voice button is live in Smart Entry, and the share action already hands the card to the OS share sheet, which is how it reaches Instagram. The deck undersells what is actually finished.
 - The mockup drew four features that did not exist. **Header search and Want to Try shipped in v2.5**, so the gap is now two: the **Dish Duel** and the **Memory Graph**. Anyone who reads that page and then signs up will still go looking for both. The page's own line — "this is just the beginning, new pages are coming soon" — softens it but does not cover a screenshot of a vote tally that has never been cast.
 - Neither artefact is deployed. `index.html` in this repo is still the older, shorter landing page.
+
+## Naming — the product needs a new name (decided 2026-09-10)
+
+"Bite Book" is being retired. Three separate findings, in order of weight:
+
+- **A live US trademark.** "BITE BOOK" is registered and in force — FORTRUEFOODIESONLY INC., filed Dec 2016, registered Oct 2018, International Class 009, covering *downloadable mobile application software providing food and recipe content*. That is this product's exact lane.
+- **Three apps already named BiteBook on the App Store.** The closest is *BiteBook: Food Photos* by Dobbins Innovation Labs (launched ~19 Aug 2026, a personal food photo journal, iPhone/Mac/Vision only, no account, local + iCloud). A second, *BiteBook™* by Itech Pioneer Pty Ltd, is a creator-venue marketing platform and asserts ™. A third listing exists and was not examined.
+- **bitebook.com is unavailable** — registered since Dec 2007, paid through 2031, transfer-locked. So is every near variant (thebitebook, mybitebook, bitebooks, bitebookapp, getbitebook, bitebookclub).
+
+Root cause worth remembering: **"Bite Book" is descriptive**, which makes it both crowded and weak — a descriptive mark is hard to register and harder to enforce. The replacement should be coined or distinctive, not another pair of food words.
+
+### Naming brief (set by the user, 2026-09-10)
+
+- **No cuisine or culture signal.** The Indian dishes in the current app (Butter Chicken, Rasoi) are fast-to-type test data, not positioning. The product is for anyone anywhere, eating local food with local friends, whether or not those people are the user's relatives. A name that tells people which kitchen it came from wrongly narrows the category. This rules out Hindi/Urdu names, and food-language names generally.
+- Translating "bite book" into another language is **not** a safe route: US trademark law's doctrine of foreign equivalents translates marks in commonly-spoken languages (Spanish, French, Italian, German, Chinese) and compares them to existing English marks — and a translation keeps the original's descriptiveness while adding a spelling problem.
+- Clearance order, learned the hard way: say it aloud → descriptive or coined? → App Store search → trademark register (including similar-sounding marks) → *then* the domain. The original name was picked domain-first with the other four steps skipped.
+
+### Candidates with the .com verified free (as of 2026-09-10)
+
+Roughly 130 names were checked against the registry. Survivors that fit the brief:
+
+- **Heirtable** (heirtable.com) — heirloom + table. Says the compounding-over-decades thesis, names no cuisine, invented so it is registrable. Current front-runner.
+- **Mealoir** (mealoir.com, mealoirapp.com) — meal + memoir.
+- **Keptmeals / The Meals We Kept** (keptmeals.com, mealswekept.com, themealswekept.com) — plain-spoken rather than coined.
+- **Table Album** (tablealbum.com), **Table Chronicle** (tablechronicle.com), **A Table Kept** (atablekept.com), **Our Meal Album** (ourmealbum.com, themealalbum.com).
+- Also free: heirplate.com, heirmeal.com, heirbite.com, heirfeast.com, heirsupper.com, feastkeep.com, tablemoir.com, secondstable.com, alaidtable.com, everymealever.com.
+- Rejected on the brief: kinsupper.com (free, but "supper" is regionally Anglo); all Hindi/Urdu options (ourtiffin, tiffinjournal, thalibook, thaliapp, ourdawat, nivalaapp, zaikaapp — free, but they signal a cuisine); all "common language" translations.
+
+**Still outstanding before any name is adopted:** an App Store search and a paid trademark clearance opinion (~$300–800) on the chosen name. Nothing above has had either.
+
+## Legal and compliance gaps — deliberately deferred (2026-09-10)
+
+The user has seen this list and chosen to park it while the app is shown only to adults he knows and takes no money. The agreed trigger for picking it up: **the first payment taken, or the first sign-up by someone he does not personally know.**
+
+Confirmed absent from the codebase as of 2026-09-10: privacy policy, terms of service, any "delete my account" path, any age gate or consent step. Confirmed present: collection of birthdays and family-member relationships (including children's), photos of identifiable people, and user text/photos sent to Google Gemini with no disclosure. Export already works.
+
+What will apply, in rough order of seriousness:
+
+1. **Trademark clearance** on the new name.
+2. **Children's privacy (COPPA, US).** A family album holds children's names, birthdays and faces. The standard shape for a small app is adults-only accounts, children present only as content an adult entered, stated plainly in the terms — needs a lawyer's confirmation.
+3. **Privacy law.** GDPR/UK GDPR if any user is in Europe; CCPA/CPRA for California. Both need a privacy notice, data access/deletion, and a named contact. Export exists; deletion does not.
+4. **App store gates.** Apple and Google both require a privacy-policy URL; Apple has required an in-app account-deletion path since 2022. These block publication outright.
+5. **AI disclosure.** The Gemini proxy must be disclosed, and Google's API terms checked against this use.
+6. **Two roadmap items are legal design problems, not paperwork:** restaurant-menu/recipe scraping republishes copyrighted text (dish names and prices are facts and far safer than prose), and cross-user recommendations need a lawful basis designed in from the start rather than retrofitted.
+
+Money adds sales tax/VAT and Apple's 15–30% cut on digital goods sold in-app; the printed yearbook adds shipping, refunds and consumer-goods obligations. Neither bites until the product charges.

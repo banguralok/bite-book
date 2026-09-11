@@ -421,9 +421,181 @@ const BiteBookPatterns = (() => {
     tableToggle(host, ['Month', 'Kind of food', 'Meals'], rows);
   }
 
+  // ---------- across the years ----------
+
+  // Small multiples: one row per year, twelve month cells. Magnitude again,
+  // so the same one-hue ramp — a reader who learned "darker is busier" on the
+  // calendar does not have to learn a second language here.
+  function renderYearGrid(hostId, entries) {
+    const host = document.getElementById(hostId);
+    if (!host) return;
+    host.innerHTML = '';
+
+    const byYearMonth = new Map();
+    entries.forEach((e) => {
+      const y = e.ateOn.slice(0, 4);
+      const m = Number(e.ateOn.slice(5, 7)) - 1;
+      const key = `${y}|${m}`;
+      byYearMonth.set(key, (byYearMonth.get(key) || 0) + 1);
+    });
+
+    const years = Array.from(new Set(entries.map((e) => e.ateOn.slice(0, 4)))).sort();
+    if (!years.length) {
+      emptyNote(host, 'Nothing logged yet.');
+      return;
+    }
+
+    // The month scale is its own thing: monthly totals are an order of
+    // magnitude bigger than daily ones, so reusing the calendar's 1-5 bands
+    // would paint every month the darkest step and say nothing.
+    const counts = Array.from(byYearMonth.values());
+    const max = Math.max.apply(null, counts.concat([1]));
+    const level = (n) => (n ? Math.min(5, Math.max(1, Math.ceil((n / max) * 5))) : 0);
+
+    const grid = document.createElement('div');
+    grid.className = 'year-grid';
+    grid.style.gridTemplateColumns = `auto repeat(12, 1fr)`;
+
+    grid.appendChild(document.createElement('span'));
+    MONTH_SHORT.forEach((m) => {
+      const head = document.createElement('span');
+      head.className = 'rhythm-head';
+      head.textContent = m;
+      grid.appendChild(head);
+    });
+
+    const tableRows = [];
+    years.forEach((year) => {
+      const label = document.createElement('span');
+      label.className = 'rhythm-day';
+      label.textContent = year;
+      grid.appendChild(label);
+
+      MONTH_SHORT.forEach((monthName, m) => {
+        const count = byYearMonth.get(`${year}|${m}`) || 0;
+        const cell = document.createElement(count ? 'a' : 'span');
+        cell.className = `year-cell heat-${level(count)}`;
+        if (count) {
+          cell.href = `entries.html?month=${encodeURIComponent(`${year}-${String(m + 1).padStart(2, '0')}`)}`;
+          cell.setAttribute('aria-label', `${monthName} ${year}: ${count} meals`);
+          tableRows.push([`${monthName} ${year}`, count]);
+        }
+        bindTip(cell, `${monthName} ${year} — ${count} ${count === 1 ? 'meal' : 'meals'}`);
+        grid.appendChild(cell);
+      });
+    });
+
+    host.appendChild(grid);
+    tableToggle(host, ['Month', 'Meals'], tableRows.sort((a, b) => b[1] - a[1]));
+  }
+
+  // Two series, so a legend is not optional. Everyday vs occasion is
+  // identity, not magnitude, which is why this is categorical rather than
+  // another shade of orange.
+  function renderYearOccasions(hostId, entries) {
+    const host = document.getElementById(hostId);
+    if (!host) return;
+    host.innerHTML = '';
+
+    const years = Array.from(new Set(entries.map((e) => e.ateOn.slice(0, 4)))).sort();
+    if (!years.length) {
+      emptyNote(host, 'Nothing logged yet.');
+      return;
+    }
+
+    const data = years.map((year) => {
+      const inYear = entries.filter((e) => e.ateOn.slice(0, 4) === year);
+      const special = inYear.filter((e) => !!e.reason).length;
+      return { year, special, everyday: inYear.length - special, total: inYear.length };
+    });
+    const max = Math.max.apply(null, data.map((d) => d.total).concat([1]));
+
+    const legend = document.createElement('div');
+    legend.className = 'chart-legend';
+    legend.innerHTML = `
+      <span class="legend-item"><span class="legend-swatch cat-1"></span>Everyday</span>
+      <span class="legend-item"><span class="legend-swatch cat-2"></span>An occasion</span>
+    `;
+    host.appendChild(legend);
+
+    const chart = document.createElement('div');
+    chart.className = 'stack-chart';
+    data.forEach((d) => {
+      const col = document.createElement('div');
+      col.className = 'stack-col';
+
+      const stack = document.createElement('div');
+      stack.className = 'stack-bar';
+      stack.style.height = `${Math.max(4, Math.round((d.total / max) * 100))}%`;
+
+      [['everyday', 'cat-1', 'Everyday'], ['special', 'cat-2', 'An occasion']].forEach(([key, cls, name]) => {
+        if (!d[key]) return;
+        const seg = document.createElement('span');
+        seg.className = `stack-seg ${cls}`;
+        seg.style.flexGrow = String(d[key]);
+        seg.tabIndex = 0;
+        seg.setAttribute('aria-label', `${name}, ${d.year}: ${d[key]}`);
+        bindTip(seg, `${d.year} · ${name} — ${d[key]} of ${d.total}`);
+        stack.appendChild(seg);
+      });
+
+      col.appendChild(stack);
+      const label = document.createElement('span');
+      label.className = 'stack-label';
+      label.textContent = d.year;
+      col.appendChild(label);
+      chart.appendChild(col);
+    });
+    host.appendChild(chart);
+
+    tableToggle(host, ['Year', 'Everyday', 'An occasion', 'Total'],
+      data.map((d) => [d.year, d.everyday, d.special, d.total]));
+  }
+
+  // A table, not a chart. Five different measures across a handful of years
+  // is exactly the case where more colour makes things worse.
+  function renderYearCompare(hostId, entries) {
+    const host = document.getElementById(hostId);
+    if (!host) return;
+    host.innerHTML = '';
+
+    const years = Array.from(new Set(entries.map((e) => e.ateOn.slice(0, 4)))).sort().reverse();
+    if (!years.length) {
+      emptyNote(host, 'Nothing logged yet.');
+      return;
+    }
+
+    const rows = years.map((year) => {
+      const inYear = entries.filter((e) => e.ateOn.slice(0, 4) === year);
+      const topCuisine = tally(inYear, (e) => e.cuisine)[0];
+      const topPlace = tally(inYear, (e) => e.placeName)[0];
+      const cities = tally(inYear, cityOf).length;
+      return [
+        year,
+        inYear.length,
+        new Set(inYear.map((e) => e.ateOn)).size,
+        cities || '—',
+        topCuisine ? cuisineLabel(topCuisine.label).replace(/^[^ ]+ /, '') : '—',
+        topPlace ? `${topPlace.label} (${topPlace.count})` : '—',
+      ];
+    });
+
+    const table = document.createElement('div');
+    table.className = 'insights-table-wrap';
+    table.innerHTML = `
+      <table class="insights-table">
+        <thead><tr>${['Year', 'Meals', 'Days', 'Towns', 'Most eaten', 'Most visited']
+          .map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead>
+        <tbody>${rows.map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody>
+      </table>
+    `;
+    host.appendChild(table);
+  }
+
   return {
     timeBucketOf, cityOf, drinksOf, tally, heatLevel,
-    renderRanked, renderCalendar, renderRhythm, renderCuisineMonths, esc,
+    renderRanked, renderCalendar, renderRhythm, renderCuisineMonths,
+    renderYearGrid, renderYearOccasions, renderYearCompare, esc,
   };
 })();
 
@@ -439,6 +611,7 @@ document.addEventListener('bitebook:ready', async () => {
   const tabs = document.querySelectorAll('#lens-tabs .lens-tab');
   const panels = {
     rhythm: document.getElementById('lens-rhythm'),
+    years: document.getElementById('lens-years'),
     what: document.getElementById('lens-what'),
     where: document.getElementById('lens-where'),
   };
@@ -516,6 +689,16 @@ document.addEventListener('bitebook:ready', async () => {
     });
 
     P.renderCuisineMonths('cuisine-months', entries);
+
+    // The year charts deliberately ignore the period filter: comparing years
+    // to each other is the whole point, and filtering to one year would leave
+    // a single bar comparing itself to nothing.
+    const forYears = all.filter((e) => (
+      place === 'all' || String(P.cityOf(e) || '').toLowerCase() === place.toLowerCase()
+    ));
+    P.renderYearGrid('year-grid', forYears);
+    P.renderYearOccasions('year-occasions', forYears);
+    P.renderYearCompare('year-compare', forYears);
 
     P.renderRanked('top-cities', P.tally(entries, (e) => P.cityOf(e)), {
       header: 'Town or city',

@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=5">
+<link rel="stylesheet" href="css/style.css?v=6">
 </head>
 <body>
 
@@ -25,6 +25,8 @@
     <h1>Want to Try</h1>
     <p class="section-sub" style="margin: 12px 0 0;">Places and dishes someone told you about — kept with who said it and why, so it still means something months later.</p>
   </div>
+
+  <div id="wish-ideas" class="idea-panel" style="display: none;"></div>
 
   <button type="button" class="toggle-link" id="add-wish-toggle"><span data-icon="plus"></span> Add Something</button>
 
@@ -42,6 +44,9 @@
       <label class="field-label" for="wish-place">Where can you get it? <span class="field-sublabel" style="display:inline; font-weight:400;">(optional)</span></label>
       <input type="text" id="wish-place" class="text-input" placeholder="e.g. Mum's kitchen" autocomplete="off">
     </div>
+
+    <label class="field-label" for="wish-city" style="margin-top: 14px;">Which town or city? <span class="field-sublabel" style="display:inline; font-weight:400;">(optional — lets Bite Book mention it when you're nearby)</span></label>
+    <input type="text" id="wish-city" class="text-input" placeholder="e.g. Kolkata" autocomplete="off">
 
     <label class="field-label" for="wish-by" style="margin-top: 14px;">Who recommended it? <span class="field-sublabel" style="display:inline; font-weight:400;">(optional)</span></label>
     <input type="text" id="wish-by" class="text-input" list="wish-people" placeholder="e.g. Priya" autocomplete="off">
@@ -79,9 +84,11 @@
 <script src="js/track.js?v=1"></script>
 <script src="js/profile.js?v=4"></script>
 <script src="js/geo.js?v=3"></script>
-<script src="js/storage.js?v=4"></script>
+<script src="js/storage.js?v=5"></script>
 <script src="js/labels.js?v=2"></script>
 <script src="js/search.js?v=1"></script>
-<script src="js/wishlist.js?v=1"></script>
+<script src="js/occasions.js?v=2"></script>
+<script src="js/nudges.js?v=1"></script>
+<script src="js/wishlist.js?v=2"></script>
 </body>
 </html>

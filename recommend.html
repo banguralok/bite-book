@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Where Should We Eat — Bite Book</title>
+<link rel="icon" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff8a4c">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=6">
+</head>
+<body>
+
+<header class="nav" id="site-header"></header>
+
+<main class="entries-page">
+  <a href="entries.html" class="wizard-link-start" style="margin-bottom: 20px; display: inline-flex;">‹ Back to My Entries</a>
+
+  <div class="entries-header">
+    <p class="eyebrow">the eternal question</p>
+    <h1>Where should we eat?</h1>
+    <p class="section-sub" style="margin: 12px 0 0;">Your own circle first, then other Bite Book families, then the open web — and it always says which is which.</p>
+  </div>
+
+  <div class="filter-row">
+    <div class="filter-group">
+      <span class="filter-label">Town</span>
+      <input type="text" id="rec-city" class="text-input" style="max-width: 220px;" placeholder="e.g. Edison" autocomplete="off">
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Feel like</span>
+      <input type="text" id="rec-want" class="text-input" style="max-width: 240px;" placeholder="e.g. something spicy" autocomplete="off">
+    </div>
+    <button type="button" class="btn btn-primary" id="rec-go"><span data-icon="search"></span> Find somewhere</button>
+  </div>
+
+  <p class="upload-status" id="rec-status"></p>
+
+  <section class="rec-tier">
+    <h2 class="chart-title">From your own circle</h2>
+    <p class="chart-sub">Places your family and friends have actually rated, and things they told you to try.</p>
+    <div id="rec-circle"></div>
+  </section>
+
+  <section class="rec-tier">
+    <h2 class="chart-title">From other Bite Book families</h2>
+    <p class="chart-sub" id="rec-aggregate-sub">Only places at least three different households have logged. Counts and averages only — never who, never when, never their notes.</p>
+    <div id="rec-aggregate"></div>
+  </section>
+
+  <section class="rec-tier">
+    <h2 class="chart-title">From the open web</h2>
+    <p class="chart-sub">Nothing to do with Bite Book — this is a web search, and it can be wrong. Every suggestion links to where it came from.</p>
+    <div id="rec-web"><button type="button" class="toggle-link" id="rec-web-btn"><span data-icon="search"></span> Search the web too</button></div>
+  </section>
+</main>
+
+<div class="chart-tip" id="chart-tip" role="status" aria-live="polite"></div>
+
+<footer class="footer" id="site-footer"></footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/icons.js?v=2"></script>
+<script src="js/roles.js?v=1"></script>
+<script src="js/partials.js?v=5"></script>
+<script src="js/track.js?v=1"></script>
+<script src="js/profile.js?v=4"></script>
+<script src="js/geo.js?v=3"></script>
+<script src="js/storage.js?v=5"></script>
+<script src="js/labels.js?v=2"></script>
+<script src="js/ai.js?v=4"></script>
+<script src="js/search.js?v=1"></script>
+<script src="js/occasions.js?v=2"></script>
+<script src="js/nudges.js?v=1"></script>
+<script src="js/recommend.js?v=1"></script>
+</body>
+</html>

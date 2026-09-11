@@ -9,3 +9,10 @@
 # a real file like supabase/analytics.sql -- which is exactly the case we
 # are trying to block. "404!" forces the rule to win over the static file.
 /supabase/*    /index.html   404!
+
+# The demo harness (dev/seed.js, dev/fake-supabase.js) exists so features that
+# need years of history can be built before the beta has any. It must never be
+# reachable on the live site: it replaces the Supabase client wholesale, so a
+# page that loaded it would show invented meals as if they were real. Blocked
+# here as well as never being referenced by any page.
+/dev/*         /index.html   404!

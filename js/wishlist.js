@@ -23,6 +23,7 @@ document.addEventListener('bitebook:ready', async () => {
   const titleInput = document.getElementById('wish-title');
   const placeWrap = document.getElementById('wish-place-wrap');
   const placeInput = document.getElementById('wish-place');
+  const cityInput = document.getElementById('wish-city');
   const byInput = document.getElementById('wish-by');
   const peopleList = document.getElementById('wish-people');
   const noteInput = document.getElementById('wish-note');
@@ -188,6 +189,7 @@ document.addEventListener('bitebook:ready', async () => {
       kind,
       title,
       placeName: kind === 'dish' ? (placeInput.value.trim() || null) : null,
+      city: cityInput.value.trim() || null,
       recommendedBy: byInput.value.trim() || null,
       note: noteInput.value.trim() || null,
     });
@@ -207,14 +209,34 @@ document.addEventListener('bitebook:ready', async () => {
     wishes.unshift(created);
     titleInput.value = '';
     placeInput.value = '';
+    cityInput.value = '';
     byInput.value = '';
     noteInput.value = '';
     titleInput.focus();
     render();
   });
 
+  // Ideas are built from your meals, your list and your calendar — no AI
+  // call, so this costs nothing and works with no network.
+  async function renderIdeas() {
+    if (typeof BiteBookNudges === 'undefined') return;
+    const myId = await BiteBookStorage.getCurrentUserId();
+    const entries = (await BiteBookStorage.listEntries()).filter((e) => e.ownerId === myId);
+    const ideas = BiteBookNudges.build(entries, wishes, BiteBookProfile.get());
+    BiteBookNudges.render('wish-ideas', ideas, async (wish, btn) => {
+      btn.disabled = true;
+      const entryId = await BiteBookStorage.logWish(wish);
+      if (!entryId) { btn.disabled = false; return; }
+      if (typeof BiteBookTrack !== 'undefined') {
+        BiteBookTrack.event('wish_logged', { kind: wish.kind, via: 'idea' });
+      }
+      window.location.href = `entry.html?id=${encodeURIComponent(entryId)}`;
+    });
+  }
+
   applyKind();
   fillPeopleSuggestions();
   wishes = await BiteBookStorage.listWishes();
   render();
+  renderIdeas();
 });

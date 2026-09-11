@@ -488,6 +488,27 @@ const BiteBookStorage = (() => {
     return !error;
   }
 
+  // ---------- recommendations ----------
+
+  // The middle tier: what other households think, with nobody identifiable.
+  // The three-household floor lives in the database (migration 011), not
+  // here — a privacy rule enforced in the browser is a suggestion.
+  async function recommendedPlaces(city) {
+    const { data, error } = await supabaseClient.rpc('bb_recommend_places', {
+      target_city: city || null,
+    });
+    if (error || !data) return [];
+    return data.map((r) => ({
+      placeName: r.place_name,
+      city: r.city,
+      country: r.country,
+      cuisine: r.cuisine,
+      households: Number(r.households),
+      meals: Number(r.meals),
+      avgRating: Number(r.avg_rating),
+    }));
+  }
+
   // ---------- want to try (wishlist) ----------
 
   function mapWishRow(row) {
@@ -496,6 +517,7 @@ const BiteBookStorage = (() => {
       kind: row.kind,
       title: row.title,
       placeName: row.place_name,
+      city: row.city || null,
       recommendedBy: row.recommended_by,
       note: row.note,
       status: row.status,
@@ -526,6 +548,7 @@ const BiteBookStorage = (() => {
         kind: wish.kind || 'place',
         title: wish.title,
         place_name: wish.placeName || null,
+        city: wish.city || null,
         recommended_by: wish.recommendedBy || null,
         note: wish.note || null,
       })
@@ -579,6 +602,7 @@ const BiteBookStorage = (() => {
   return {
     newId,
     getCurrentUserId: currentUserId,
+    recommendedPlaces,
     listWishes,
     createWish,
     deleteWish,
