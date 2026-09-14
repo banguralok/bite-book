@@ -1,5 +1,17 @@
 {
   "appId": "com.alokbangur.bitebook",
   "appName": "Bite Book",
-  "webDir": "www"
+  "webDir": "www",
+  "server": {
+    "url": "https://bitebook3.netlify.app",
+    "cleartext": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": false,
+      "backgroundColor": "#fff8ef",
+      "androidScaleType": "CENTER_INSIDE",
+      "showSpinner": false
+    }
+  }
 }
