@@ -175,6 +175,8 @@ Currently used for cross-user duplicate-entry resolution (see above); a 🔔 bad
 ### Landing Page — [index.html](index.html)
 Hero with a "Start My First Entry" call to action (into Smart Entry), a before/after section showing a plain photo-and-caption turning into a warm "scrapbook card" record, a 3-step "how it works" explainer, and a preview of everything an entry can capture. `js/index-gate.js` only redirects away from this page on a genuine auth callback (an invite/magic-link/confirmation arriving with the right hash or query params) — an ordinary visit while signed in (a bookmark, the logo, a shared link) keeps the landing page and simply retargets its calls-to-action at the journal ("🍽️ Open My Journal") or profile setup ("👋 Finish Setting Up"), whichever applies.
 
+The first time this page opens in a browser session, a brief one-time animation plays before any of that: the bowl-and-book logo fades in, then the "Bite Book" lettering resolves into place as if condensing out of its own rising steam, before fading away to reveal the real page. Pure CSS (two stacked copies of the app icon, no extra art or library), skipped on repeat visits within the same session and for anyone with `prefers-reduced-motion` set.
+
 A full redesign of this page exists as a mockup (`bitebook_site_014.html`, 2026-09-08) and is **not** deployed — it is roughly three times the length of the live page and leads with four features the app doesn't have. See `ROADMAP.md` before treating any of it as current.
 
 ### Header — [js/partials.js](js/partials.js)

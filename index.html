@@ -11,9 +11,31 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=7">
+<link rel="stylesheet" href="css/style.css?v=8">
 </head>
 <body>
+
+<div class="brand-intro" id="brand-intro">
+  <div class="brand-intro-art">
+    <img class="bi-layer bi-base" src="icons/icon-512.png" alt="" aria-hidden="true">
+    <img class="bi-layer bi-reveal" src="icons/icon-512.png" alt="" aria-hidden="true">
+  </div>
+</div>
+<script>
+// A one-time "the logo forms" moment on first open per session — never
+// replayed on the same visit's later page views, and skipped entirely on
+// repeat sessions. Runs inline, before paint, so a returning-this-session
+// visitor never sees a flash of it before it gets removed.
+(function () {
+  var el = document.getElementById('brand-intro');
+  var alreadyShown = true;
+  try { alreadyShown = !!sessionStorage.getItem('bb_intro_shown'); sessionStorage.setItem('bb_intro_shown', '1'); } catch (e) {}
+  if (alreadyShown) { el.remove(); return; }
+  el.addEventListener('animationend', function (e) {
+    if (e.animationName === 'bi-overlay-out') el.remove();
+  });
+})();
+</script>
 
 <header class="nav" id="site-header"></header>
 

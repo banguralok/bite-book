@@ -238,6 +238,62 @@ img, svg { max-width: 100%; }
   50% { transform: translateY(-14px) rotate(6deg); }
 }
 
+/* ---------- BRAND INTRO ----------
+   A one-time reveal, first open per session only (see index.html's inline
+   script): the bowl + book appear first, then the "Bite Book" lettering
+   resolves into place as if condensing out of the steam rising from it —
+   built from two copies of the same logo image (js/none needed — pure CSS),
+   one always-crisp for the bottom half, one clipped/blurred for the top
+   half that un-blurs and un-clips upward. */
+.brand-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cream);
+  animation: bi-overlay-out 0.5s ease-in 2.3s forwards;
+}
+.brand-intro-art {
+  position: relative;
+  width: min(60vw, 260px);
+  height: min(60vw, 260px);
+}
+.bi-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.bi-base {
+  clip-path: inset(42% 0 0 0);
+  opacity: 0;
+  animation: bi-base-in 0.5s ease-out 0.15s forwards;
+}
+.bi-reveal {
+  clip-path: inset(42% 0 0 0);
+  opacity: 0;
+  filter: blur(10px);
+  animation: bi-reveal-in 1.6s cubic-bezier(.2,.8,.2,1) 0.5s forwards;
+}
+@keyframes bi-base-in {
+  to { opacity: 1; }
+}
+@keyframes bi-reveal-in {
+  0%   { clip-path: inset(42% 0 0 0); opacity: 0; filter: blur(10px); }
+  45%  { opacity: 0.7; filter: blur(5px); }
+  100% { clip-path: inset(0% 0 0 0); opacity: 1; filter: blur(0); }
+}
+@keyframes bi-overlay-out {
+  to { opacity: 0; visibility: hidden; pointer-events: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .brand-intro { animation-duration: 0.01s; animation-delay: 0.3s; }
+  .bi-base, .bi-reveal { animation: none; opacity: 1; clip-path: inset(0 0 0 0); filter: none; }
+}
+
 /* ---------- SECTIONS ---------- */
 
 section h2 {
