@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('bitebook:ready', () => {
   const chatLog = document.getElementById('chat-log');
   const chatInput = document.getElementById('chat-input');
   const sendBtn = document.getElementById('chat-send-btn');
@@ -26,8 +26,16 @@ document.addEventListener('DOMContentLoaded', () => {
     return bubble;
   }
 
-  function buildJournalContext() {
-    const entries = BiteBookStorage.listEntries().map((e) => ({
+  async function buildJournalContext() {
+    const [allEntries, myId, directory] = await Promise.all([
+      BiteBookStorage.listEntries(),
+      BiteBookStorage.getCurrentUserId(),
+      BiteBookStorage.listDirectory(),
+    ]);
+    const namesById = new Map(directory.map((p) => [p.id, p.name || 'someone they know']));
+
+    const entries = allEntries.map((e) => ({
+      owner: e.ownerId === myId ? 'me' : (namesById.get(e.ownerId) || 'someone else'),
       food: e.food,
       status: e.status,
       mealType: e.mealType,
@@ -54,7 +62,8 @@ document.addEventListener('DOMContentLoaded', () => {
   async function sendQuestion(question) {
     if (!question.trim()) return;
 
-    if (BiteBookStorage.listEntries().length === 0) {
+    const entryCount = (await BiteBookStorage.listEntries()).length;
+    if (entryCount === 0) {
       renderMessage('user', question);
       renderMessage('ai', "You haven't logged any meals yet — log a few, then come back and ask me about them!", 'error');
       chatInput.value = '';
@@ -72,7 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const thinkingBubble = renderMessage('ai', '✨ Thinking...', 'thinking');
 
     try {
-      const context = buildJournalContext();
+      const context = await buildJournalContext();
       const answer = await BiteBookAI.askAboutJournal(question, history, context);
       thinkingBubble.remove();
       renderMessage('ai', answer);

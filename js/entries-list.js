@@ -35,7 +35,101 @@ function resumePageFor(entry) {
   return STEP_SEQUENCE[STEP_SEQUENCE.length - 1].page;
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+const DEDUPE_DISMISSED_KEY = 'bitebook:dedupeDismissed';
+
+function dedupeGroupKey(group) {
+  return group.names.slice().sort().join('|');
+}
+
+function getDismissedDedupeKeys() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(DEDUPE_DISMISSED_KEY) || '[]'));
+  } catch (e) {
+    return new Set();
+  }
+}
+
+function dismissDedupeGroup(key) {
+  const dismissed = getDismissedDedupeKeys();
+  dismissed.add(key);
+  localStorage.setItem(DEDUPE_DISMISSED_KEY, JSON.stringify(Array.from(dismissed)));
+}
+
+function findOnThisDayEntries(entries) {
+  const today = new Date();
+  const matches = [];
+  entries.forEach((e) => {
+    if (e.status !== 'complete' || !e.ateOn) return;
+    const d = parseDateInputValue(e.ateOn);
+    if (d.getMonth() === today.getMonth() && d.getDate() === today.getDate() && d.getFullYear() < today.getFullYear()) {
+      matches.push({ entry: e, yearsAgo: today.getFullYear() - d.getFullYear() });
+    }
+  });
+  matches.sort((a, b) => b.yearsAgo - a.yearsAgo);
+  return matches;
+}
+
+function renderOnThisDay(entries) {
+  const container = document.getElementById('on-this-day');
+  if (!container) return;
+
+  const matches = findOnThisDayEntries(entries);
+  if (matches.length === 0) {
+    container.style.display = 'none';
+    container.innerHTML = '';
+    return;
+  }
+
+  container.style.display = 'flex';
+  container.innerHTML = matches.map(({ entry, yearsAgo }) => {
+    const photo = entry.photos && entry.photos[0];
+    const thumbHtml = photo
+      ? `<img class="on-this-day-photo" src="${photo.url}" alt="">`
+      : `<div class="on-this-day-photo-placeholder">🍽️</div>`;
+    const metaBits = [entry.placeName, ratingStarsLabel(entry.rating)].filter(Boolean).join(' · ');
+    return `
+      <a href="entry-view.html?id=${encodeURIComponent(entry.id)}" class="on-this-day-card">
+        ${thumbHtml}
+        <div class="on-this-day-info">
+          <span class="on-this-day-label">📅 ${yearsAgo} year${yearsAgo === 1 ? '' : 's'} ago today</span>
+          <strong>${escapeHtml(entry.food || 'Untitled entry')}</strong>
+          ${metaBits ? `<span class="on-this-day-meta">${escapeHtml(metaBits)}</span>` : ''}
+        </div>
+      </a>
+    `;
+  }).join('');
+}
+
+function renderDedupeBanner(entries) {
+  const banner = document.getElementById('dedupe-banner');
+  if (!banner) return;
+
+  const placeNames = entries.map((e) => e.placeName).filter(Boolean);
+  const groups = findLikelyDuplicatePlaceNames(placeNames);
+  const dismissed = getDismissedDedupeKeys();
+  const activeGroups = groups.filter((g) => !dismissed.has(dedupeGroupKey(g)));
+
+  if (activeGroups.length === 0) {
+    banner.style.display = 'none';
+    return;
+  }
+
+  banner.style.display = 'flex';
+  banner.innerHTML = `
+    <span>We found ${activeGroups.length} place name${activeGroups.length === 1 ? '' : 's'} that might be the same restaurant.</span>
+    <div class="dedupe-banner-actions">
+      <a href="dedupe.html" class="link-pill">Review →</a>
+      <button type="button" class="dedupe-banner-dismiss" id="dedupe-banner-dismiss" aria-label="Dismiss">✕</button>
+    </div>
+  `;
+
+  document.getElementById('dedupe-banner-dismiss').addEventListener('click', () => {
+    activeGroups.forEach((g) => dismissDedupeGroup(dedupeGroupKey(g)));
+    banner.style.display = 'none';
+  });
+}
+
+document.addEventListener('bitebook:ready', async () => {
   const listEl = document.getElementById('entries-list');
   const emptyEl = document.getElementById('empty-state');
   const noResultsEl = document.getElementById('no-results-state');
@@ -53,10 +147,109 @@ document.addEventListener('DOMContentLoaded', () => {
   const smartSearchActiveNote = document.getElementById('smart-search-active-note');
 
   let statusFilter = 'all';
+  // Set from the URL when you arrive here by clicking a person or a place in
+  // the header search. Kept separate from the text search so clearing one
+  // doesn't silently clear the other.
+  const urlParams = new URLSearchParams(window.location.search);
+  const personFilter = urlParams.get('person');
+  const placeFilter = urlParams.get('place');
+  const dateFilter = urlParams.get('date');
+  const cityFilter = urlParams.get('city');
+  const countryFilter = urlParams.get('country');
+  const occasionFilter = urlParams.get('occasion');
+  const monthFilter = urlParams.get('month');
+  if (urlParams.get('q')) searchInput.value = urlParams.get('q');
   let hiddenIds = new Set();
   let pendingDelete = null;
   let smartSearchIds = null;
   let smartSearchForQuery = null;
+  // Fetched once (and refreshed only after an actual data change) so
+  // search/filter typing re-filters locally instead of hitting Supabase
+  // on every keystroke.
+  let allEntriesCache = [];
+  let myId = null;
+  let directoryById = new Map();
+
+  async function refreshEntriesCache() {
+    if (!myId) myId = await BiteBookStorage.getCurrentUserId();
+    if (directoryById.size === 0) {
+      const directory = await BiteBookStorage.listDirectory();
+      directory.forEach((p) => directoryById.set(p.id, p.name || 'Unnamed'));
+    }
+    allEntriesCache = await BiteBookStorage.listEntries();
+    renderOnThisDay(allEntriesCache);
+    renderDedupeBanner(allEntriesCache);
+
+    // Streaks and occasion reminders are about YOUR own logging, so entries
+    // someone else shared with you are deliberately left out of both.
+    const myEntries = allEntriesCache.filter((e) => e.ownerId === myId);
+    if (typeof BiteBookStreak !== 'undefined') {
+      BiteBookStreak.render(
+        'streak-strip',
+        myEntries.filter((e) => e.status === 'complete').map((e) => e.ateOn)
+      );
+    }
+    if (typeof BiteBookOccasions !== 'undefined') {
+      BiteBookOccasions.render('occasions', BiteBookProfile.get(), myEntries);
+    }
+    if (typeof BiteBookYear !== 'undefined') {
+      BiteBookYear.renderBanner('year-banner', allEntriesCache, myId);
+    }
+    if (typeof checkForCrossUserDuplicates === 'function') {
+      checkForCrossUserDuplicates(allEntriesCache).catch(() => {});
+    }
+  }
+
+  // A person can be attached to a meal three ways — as a saved family member,
+  // as free text in "who were you with", or as whoever cooked it — so all
+  // three have to be checked or the filter quietly loses meals.
+  function entryInvolvesPerson(entry, name) {
+    const needle = name.trim().toLowerCase();
+    if (!needle) return true;
+    const names = [];
+    if (typeof resolveFamilyMemberNames === 'function') {
+      resolveFamilyMemberNames(entry.companionFamilyIds).forEach((n) => names.push(n));
+    }
+    (entry.companionNames || '').split(/[,&]| and /i).forEach((n) => names.push(n));
+    if (entry.madeByName) names.push(entry.madeByName);
+    return names.some((n) => String(n).trim().toLowerCase() === needle);
+  }
+
+  // Older entries have no city column; fall back to the saved address the same
+  // way the patterns page does, so a link from there finds the same meals.
+  function entryCity(entry) {
+    if (entry.city) return entry.city;
+    if (typeof cityFromSavedAddress === 'function') return cityFromSavedAddress(entry.placeAddress);
+    return null;
+  }
+
+  function renderActiveFilter() {
+    const el = document.getElementById('active-filter');
+    if (!el) return;
+    let active = null;
+    if (personFilter) active = { icon: 'person', label: `Meals with ${personFilter}` };
+    else if (placeFilter) active = { icon: 'pin', label: `Meals at ${placeFilter}` };
+    else if (dateFilter) active = { icon: 'calendar', label: formatDateLabel(dateFilter) };
+    else if (monthFilter) {
+      const d = parseDateInputValue(`${monthFilter}-01`);
+      active = { icon: 'calendar', label: d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' }) };
+    }
+    else if (cityFilter) active = { icon: 'pin', label: `Meals in ${cityFilter}` };
+    else if (countryFilter) active = { icon: 'pin', label: `Meals in ${countryFilter}` };
+    else if (occasionFilter) {
+      const label = (typeof reasonLabel === 'function' ? reasonLabel(occasionFilter) : occasionFilter) || occasionFilter;
+      active = { icon: 'star', label: `Meals for ${label.replace(/^[^ ]+ /, '')}` };
+    }
+    if (!active) {
+      el.style.display = 'none';
+      return;
+    }
+    el.style.display = 'flex';
+    el.innerHTML = `
+      <span class="active-filter-label">${BiteBookIcons.svg(active.icon)} ${escapeHtml(active.label)}</span>
+      <a class="link-pill" href="entries.html">Clear</a>
+    `;
+  }
 
   function searchableText(entry) {
     return [
@@ -69,6 +262,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (hiddenIds.has(entry.id)) return false;
     if (statusFilter === 'complete' && entry.status !== 'complete') return false;
     if (statusFilter === 'draft' && entry.status === 'complete') return false;
+    if (personFilter && !entryInvolvesPerson(entry, personFilter)) return false;
+    if (placeFilter && String(entry.placeName || '').trim().toLowerCase() !== placeFilter.trim().toLowerCase()) return false;
+    if (dateFilter && entry.ateOn !== dateFilter) return false;
+    if (monthFilter && String(entry.ateOn || '').slice(0, 7) !== monthFilter) return false;
+    if (cityFilter && String(entryCity(entry) || '').trim().toLowerCase() !== cityFilter.trim().toLowerCase()) return false;
+    if (countryFilter && String(entry.country || '').trim().toLowerCase() !== countryFilter.trim().toLowerCase()) return false;
+    if (occasionFilter && entry.reason !== occasionFilter) return false;
     if (query) {
       const substringMatch = searchableText(entry).includes(query);
       const smartMatch = !!(smartSearchIds && smartSearchForQuery === query && smartSearchIds.has(entry.id));
@@ -78,7 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function render() {
-    const allEntries = BiteBookStorage.listEntries();
+    const allEntries = allEntriesCache;
     const query = searchInput.value.trim().toLowerCase();
     const entries = allEntries.filter((e) => matchesFilters(e, query));
 
@@ -127,6 +327,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const mediaLabel = mediaSummaryLabel(entry);
       const isComplete = entry.status === 'complete';
       const linkPage = isComplete ? 'entry-view.html' : resumePageFor(entry);
+      const isOwner = entry.ownerId === myId;
+      const sharedByLabel = isOwner ? '' : `👥 Shared by ${directoryById.get(entry.ownerId) || 'someone'}`;
 
       wrap.innerHTML = `
         <a class="entry-card-link" href="${linkPage}?id=${encodeURIComponent(entry.id)}">
@@ -145,6 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
               ${mediaLabel ? `<span class="entry-tag">${escapeHtml(mediaLabel)}</span>` : ''}
               ${mealLabel ? `<span class="entry-tag">${mealLabel}</span>` : ''}
               ${cuisLabel ? `<span class="entry-tag">${cuisLabel}</span>` : ''}
+              ${sharedByLabel ? `<span class="entry-tag shared-by-badge">${escapeHtml(sharedByLabel)}</span>` : ''}
             </div>
           </div>
           <div class="entry-card-meta">
@@ -155,7 +358,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </a>
         <div class="entry-card-actions">
           ${isComplete ? `<button type="button" class="entry-icon-btn" title="Log this again" aria-label="Log &quot;${escapeHtml(title)}&quot; again" data-again="${escapeHtml(entry.id)}">🔁</button>` : ''}
-          <button type="button" class="entry-icon-btn" title="Delete this entry" aria-label="Delete &quot;${escapeHtml(title)}&quot;" data-id="${escapeHtml(entry.id)}">🗑️</button>
+          ${isOwner ? `<button type="button" class="entry-icon-btn" title="Delete this entry" aria-label="Delete &quot;${escapeHtml(title)}&quot;" data-id="${escapeHtml(entry.id)}">🗑️</button>` : ''}
         </div>
       `;
 
@@ -172,10 +375,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     listEl.querySelectorAll('[data-again]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const source = BiteBookStorage.getEntry(btn.dataset.again);
+      btn.addEventListener('click', async () => {
+        const source = await BiteBookStorage.getEntry(btn.dataset.again);
         if (!source) return;
-        const newId = BiteBookStorage.duplicateForLogAgain(source);
+        const newId = await BiteBookStorage.duplicateForLogAgain(source);
         window.location.href = `entry.html?id=${encodeURIComponent(newId)}`;
       });
     });
@@ -189,8 +392,9 @@ document.addEventListener('DOMContentLoaded', () => {
     undoToast.classList.add('visible');
     pendingDelete = {
       id,
-      timer: setTimeout(() => {
-        BiteBookStorage.deleteEntry(id);
+      timer: setTimeout(async () => {
+        await BiteBookStorage.deleteEntry(id);
+        allEntriesCache = allEntriesCache.filter((e) => e.id !== id);
         hiddenIds.delete(id);
         pendingDelete = null;
         undoToast.classList.remove('visible');
@@ -202,6 +406,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!pendingDelete) return;
     clearTimeout(pendingDelete.timer);
     BiteBookStorage.deleteEntry(pendingDelete.id);
+    allEntriesCache = allEntriesCache.filter((e) => e.id !== pendingDelete.id);
     hiddenIds.delete(pendingDelete.id);
     pendingDelete = null;
   }
@@ -233,7 +438,7 @@ document.addEventListener('DOMContentLoaded', () => {
     smartSearchStatus.classList.remove('error');
 
     try {
-      const compact = BiteBookStorage.listEntries().map((e) => ({
+      const compact = allEntriesCache.map((e) => ({
         id: e.id,
         food: e.food,
         cuisine: e.cuisine,
@@ -272,8 +477,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  exportBtn.addEventListener('click', () => {
-    const json = BiteBookStorage.exportAllAsJson();
+  exportBtn.addEventListener('click', async () => {
+    const json = await BiteBookStorage.exportAllAsJson();
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -296,15 +501,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       const ok = window.confirm(
         'Import entries from this file? New ones will be added, and any with matching IDs will be updated.'
       );
       if (!ok) return;
-      const result = BiteBookStorage.importFromJson(reader.result, 'merge');
+      importExportStatus.textContent = '⏳ Importing...';
+      importExportStatus.classList.remove('error');
+      const result = await BiteBookStorage.importFromJson(reader.result, 'merge');
       if (result.ok) {
         importExportStatus.textContent = `✅ Imported ${result.count} entr${result.count === 1 ? 'y' : 'ies'}.`;
         importExportStatus.classList.remove('error');
+        await refreshEntriesCache();
         render();
       } else {
         importExportStatus.textContent = `⚠️ ${result.error}`;
@@ -314,5 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
     reader.readAsText(file);
   });
 
+  renderActiveFilter();
+  await refreshEntriesCache();
   render();
 });

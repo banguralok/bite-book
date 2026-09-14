@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('bitebook:ready', async () => {
   const foodInput = document.getElementById('quick-food-name');
   const captureWhen = document.getElementById('capture-when');
   const captureWhere = document.getElementById('capture-where');
@@ -17,6 +17,8 @@ document.addEventListener('DOMContentLoaded', () => {
     madeBy: null,
     cuisine: null,
     coords: null,
+    city: null,
+    country: null,
   };
 
   captureWhen.textContent = `Today · ${mealTypeLabel(captured.mealType)} · ${timeOfDayLabel(captured.timeOfDay)}`;
@@ -43,6 +45,8 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
           const data = await reverseGeocodeLookup(lat, lon);
           const context = inferPlaceContext(data, captured.coords);
+          captured.city = cityFromGeocode(data);
+          captured.country = countryFromGeocode(data);
 
           if (context.isHome) {
             captured.placeType = 'home';
@@ -81,7 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
     captureWhere.textContent = "Not available on this device.";
   }
 
-  logItBtn.addEventListener('click', () => {
+  logItBtn.addEventListener('click', async () => {
     const food = foodInput.value.trim();
     if (!food) return;
 
@@ -103,6 +107,8 @@ document.addEventListener('DOMContentLoaded', () => {
       placeType: captured.placeType,
       placeSource: captured.coords ? 'geolocation' : null,
       coords: captured.coords,
+      city: captured.city,
+      country: captured.country,
       madeBy: captured.madeBy,
       status: 'draft',
       createdAt: now,
@@ -111,7 +117,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     logItBtn.disabled = true;
     logItBtn.textContent = '⚡ Logging...';
-    BiteBookStorage.saveEntry(entry);
+    await BiteBookStorage.saveEntry(entry);
+    if (typeof BiteBookTrack !== 'undefined') {
+      BiteBookTrack.event('entry_created', { via: 'quick_log' });
+    }
     savedToast.classList.add('visible');
     setTimeout(() => {
       window.location.href = 'entries.html';

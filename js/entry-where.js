@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('bitebook:ready', async () => {
   const placeNameInput = document.getElementById('place-name');
   const placeNameSuggestions = document.getElementById('place-name-suggestions');
   const useGeoBtn = document.getElementById('use-geo-btn');
@@ -17,9 +17,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let entryId = null;
   let createdAt = null;
+  let cachedEntry = null;
   let selectedPlaceType = null;
   let placeSource = 'manual';
   let coords = null;
+  let geoCity = null;
+  let geoCountry = null;
   let inferredCuisine = null;
 
   function debounce(fn, delay) {
@@ -31,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function buildEntry() {
-    const existing = BiteBookStorage.getEntry(entryId) || {};
+    const existing = cachedEntry || {};
     const placeType = selectedPlaceType === 'other'
       ? placeTypeOtherInput.value.trim()
       : selectedPlaceType;
@@ -46,16 +49,19 @@ document.addEventListener('DOMContentLoaded', () => {
       placeType: placeType || null,
       placeSource,
       coords,
+      city: geoCity || existing.city || null,
+      country: geoCountry || existing.country || null,
       createdAt: createdAt || existing.createdAt || now,
       updatedAt: now,
     };
   }
 
-  function saveNow() {
+  async function saveNow() {
     if (!placeNameInput.value.trim()) return;
     const entry = buildEntry();
     if (!createdAt) createdAt = entry.createdAt;
-    const ok = BiteBookStorage.saveEntry(entry);
+    cachedEntry = entry;
+    const ok = await BiteBookStorage.saveEntry(entry);
     flashAutosaveBadge(autosaveHint, ok);
   }
 
@@ -147,6 +153,8 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
           const data = await reverseGeocodeLookup(lat, lon);
           const context = inferPlaceContext(data, coords);
+          geoCity = cityFromGeocode(data);
+          geoCountry = countryFromGeocode(data);
 
           if (context.isHome) {
             const profile = BiteBookProfile.get();
@@ -180,7 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateContinueState();
         scheduleSave();
         resetGeoButton();
-        populatePlaceSuggestions();
+        await populatePlaceSuggestions();
       },
       (err) => {
         geoStatus.textContent = geoErrorMessage(err);
@@ -190,9 +198,10 @@ document.addEventListener('DOMContentLoaded', () => {
     );
   });
 
-  function restoreFromStorage() {
-    const existing = BiteBookStorage.getEntry(entryId);
+  async function restoreFromStorage() {
+    const existing = await BiteBookStorage.getEntry(entryId);
     if (!existing) return;
+    cachedEntry = existing;
     createdAt = existing.createdAt;
 
     if (existing.placeName) {
@@ -239,9 +248,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Only entries saved via "Use My Current Location" carry coords, so this
   // is necessarily partial — placeNames typed by hand have no known location.
-  function mostRecentCoordsByPlace() {
+  async function mostRecentCoordsByPlace() {
     const map = {};
-    BiteBookStorage.listEntries().forEach((e) => {
+    const entries = await BiteBookStorage.listEntries();
+    entries.forEach((e) => {
       if (e.placeName && e.coords && (!map[e.placeName] || e.updatedAt > map[e.placeName].updatedAt)) {
         map[e.placeName] = { lat: e.coords.lat, lon: e.coords.lon, updatedAt: e.updatedAt };
       }
@@ -249,10 +259,11 @@ document.addEventListener('DOMContentLoaded', () => {
     return map;
   }
 
-  function populatePlaceSuggestions() {
+  async function populatePlaceSuggestions() {
     const counts = {};
     const lastSeen = {};
-    BiteBookStorage.listEntries().forEach((e) => {
+    const allEntries = await BiteBookStorage.listEntries();
+    allEntries.forEach((e) => {
       if (!e.placeName) return;
       counts[e.placeName] = (counts[e.placeName] || 0) + 1;
       if (!lastSeen[e.placeName] || e.updatedAt > lastSeen[e.placeName]) {
@@ -265,7 +276,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let names;
 
     if (ref) {
-      const coordsByPlace = mostRecentCoordsByPlace();
+      const coordsByPlace = await mostRecentCoordsByPlace();
       const nearby = [];
       const unknownDistance = [];
       Object.keys(counts).forEach((name) => {
@@ -297,25 +308,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  populatePlaceSuggestions();
+  await populatePlaceSuggestions();
 
   entryId = resolveEntryId();
   if (entryId) {
     backBtn.href = `entry-when.html?id=${encodeURIComponent(entryId)}`;
-    restoreFromStorage();
+    await restoreFromStorage();
   }
 
-  continueBtn.addEventListener('click', () => {
-    saveNow();
+  continueBtn.addEventListener('click', async () => {
+    await saveNow();
     savedToast.classList.add('visible');
     continueBtn.disabled = true;
     setTimeout(() => {
       window.location.href = `entry-who.html?id=${encodeURIComponent(entryId)}`;
-    }, 500);
+    }, 400);
   });
 
-  document.getElementById('finish-later-btn').addEventListener('click', () => {
-    saveNow();
+  document.getElementById('finish-later-btn').addEventListener('click', async () => {
+    await saveNow();
     window.location.href = 'entries.html';
   });
 

@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('bitebook:ready', async () => {
   const photoGrid = document.getElementById('photo-grid');
   const photoAddTile = document.getElementById('photo-add-tile');
   const photoInput = document.getElementById('photo-input');
@@ -21,11 +21,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let entryId = null;
   let createdAt = null;
+  let cachedEntry = null;
   let photos = [];
   let videos = [];
 
   function buildEntry(extra) {
-    const existing = BiteBookStorage.getEntry(entryId) || {};
+    const existing = cachedEntry || {};
     const now = new Date().toISOString();
     return {
       ...existing,
@@ -38,9 +39,10 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
-  function saveNow(extra) {
+  async function saveNow(extra) {
     const entry = buildEntry(extra);
     if (!createdAt) createdAt = entry.createdAt;
+    cachedEntry = entry;
     return BiteBookStorage.saveEntry(entry);
   }
 
@@ -56,16 +58,16 @@ document.addEventListener('DOMContentLoaded', () => {
       const tile = document.createElement('div');
       tile.className = 'photo-tile';
       tile.innerHTML = `
-        <img src="${photo.dataUrl}" alt="">
+        <img src="${photo.url || photo.dataUrl}" alt="">
         <button type="button" class="photo-tile-remove" data-index="${index}" aria-label="Remove this photo">✕</button>
       `;
       photoGrid.insertBefore(tile, photoAddTile);
     });
     photoGrid.querySelectorAll('.photo-tile-remove').forEach((btn) => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         photos.splice(Number(btn.dataset.index), 1);
         renderPhotos();
-        saveNow();
+        await saveNow();
       });
     });
     photoAddTile.style.display = photos.length >= MAX_PHOTOS ? 'none' : 'flex';
@@ -87,24 +89,38 @@ document.addEventListener('DOMContentLoaded', () => {
         photoStatus.classList.add('error');
         break;
       }
-      if (!file.type.startsWith('image/')) continue;
+      // Some browsers report an empty MIME type for formats like HEIC/HEIF
+      // (common for iPhone photos) — fall back to the file extension rather
+      // than silently skipping the file when file.type comes back blank.
+      const looksLikeImage = file.type
+        ? file.type.startsWith('image/')
+        : /\.(heic|heif|jpe?g|png|gif|webp|bmp|tiff?)$/i.test(file.name);
+      if (!looksLikeImage) continue;
+
+      if (isHeicFile(file)) {
+        photoStatus.textContent = 'Converting HEIC photo...';
+        photoStatus.classList.remove('error');
+      }
 
       try {
-        const compressed = await compressImageFile(file, { maxBytes: MAX_PHOTO_BYTES });
+        const compressed = await decodePhotoForUpload(file, { maxBytes: MAX_PHOTO_BYTES });
         const previous = photos.slice();
         photos.push(compressed);
-        const ok = saveNow();
+        const ok = await saveNow();
         if (ok) {
           flashAutosaveBadge(autosaveHint, true);
           renderPhotos();
+          photoStatus.textContent = '';
+          photoStatus.classList.remove('error');
         } else {
           photos = previous;
-          photoStatus.textContent = "⚠️ That didn't fit in your browser's storage — try removing another photo first.";
+          photoStatus.textContent = "⚠️ That didn't upload — check your connection and try again.";
           photoStatus.classList.add('error');
           break;
         }
       } catch (e) {
-        photoStatus.textContent = '⚠️ Something went wrong with that photo — mind trying another?';
+        console.error('Photo upload failed:', e);
+        photoStatus.textContent = `⚠️ Couldn't process that photo: ${e && e.message ? e.message : 'unknown error'}. Try another photo, or check the browser console for detail.`;
         photoStatus.classList.add('error');
       }
     }
@@ -125,10 +141,10 @@ document.addEventListener('DOMContentLoaded', () => {
       videoList.appendChild(row);
     });
     videoList.querySelectorAll('.video-row-remove').forEach((btn) => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         videos.splice(Number(btn.dataset.index), 1);
         renderVideos();
-        saveNow();
+        await saveNow();
       });
     });
     const atMax = videos.length >= MAX_VIDEOS;
@@ -158,16 +174,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       const previous = videos.slice();
       videos.push({ kind: 'file', name: file.name, type: file.type, size: file.size, dataUrl: reader.result });
-      const ok = saveNow();
+      const ok = await saveNow();
       if (ok) {
         flashAutosaveBadge(autosaveHint, true);
         renderVideos();
       } else {
         videos = previous;
-        videoStatus.textContent = "⚠️ That didn't fit in your browser's storage — try a link instead.";
+        videoStatus.textContent = "⚠️ That didn't upload — try a link instead.";
         videoStatus.classList.add('error');
       }
     };
@@ -178,7 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
     reader.readAsDataURL(file);
   });
 
-  function addVideoLink() {
+  async function addVideoLink() {
     let url = videoLinkInput.value.trim();
     if (!url) return;
     if (videos.length >= MAX_VIDEOS) {
@@ -197,8 +213,8 @@ document.addEventListener('DOMContentLoaded', () => {
     videoStatus.textContent = '';
     videoStatus.classList.remove('error');
     renderVideos();
-    saveNow();
-    flashAutosaveBadge(autosaveHint, true);
+    const ok = await saveNow();
+    flashAutosaveBadge(autosaveHint, ok);
   }
 
   videoLinkAddBtn.addEventListener('click', () => addVideoLink());
@@ -209,9 +225,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  function restoreFromStorage() {
-    const existing = BiteBookStorage.getEntry(entryId);
+  async function restoreFromStorage() {
+    const existing = await BiteBookStorage.getEntry(entryId);
     if (existing) {
+      cachedEntry = existing;
       createdAt = existing.createdAt;
       photos = existing.photos || [];
       videos = existing.videos || [];
@@ -233,15 +250,18 @@ document.addEventListener('DOMContentLoaded', () => {
   entryId = resolveEntryId();
   if (entryId) {
     backBtn.href = `entry-loved.html?id=${encodeURIComponent(entryId)}`;
-    restoreFromStorage();
+    await restoreFromStorage();
   }
 
-  continueBtn.addEventListener('click', () => {
-    saveNow({ status: 'complete' });
+  continueBtn.addEventListener('click', async () => {
+    await saveNow({ status: 'complete' });
+    if (typeof BiteBookTrack !== 'undefined') {
+      BiteBookTrack.event('entry_created', { via: 'wizard' });
+    }
     savedToast.classList.add('visible');
     continueBtn.disabled = true;
     setTimeout(() => {
       window.location.href = 'entries.html';
-    }, 900);
+    }, 700);
   });
 });

@@ -4,14 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bite Book — Your Food Story</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍜</text></svg>">
+<link rel="icon" href="icons/icon-192.png">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#ff8a4c">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=2">
+<link rel="stylesheet" href="css/style.css?v=7">
 </head>
 <body>
 
@@ -28,7 +28,7 @@
         Bite Book is your own tasty diary. No pressure, no clutter, just your food memories.
       </p>
       <div class="hero-actions">
-        <a href="entry.html" class="btn btn-primary">Start My First Entry</a>
+        <a href="smart-entry.html" class="btn btn-primary">✨ Start My First Entry</a>
         <a href="#how-it-works" class="btn btn-ghost">See how it works</a>
       </div>
     </div>
@@ -40,6 +40,29 @@
         <span class="float f4">🥭</span>
         <span class="float f5">🍩</span>
         <span class="float f6">🍓</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="transformation" id="transformation">
+    <h2>The same dinner, before and after</h2>
+    <p class="section-sub">A photo and a caption become a memory worth keeping.</p>
+    <div class="transformation-row">
+      <div class="transformation-before">
+        <div class="before-photo" aria-hidden="true">📷</div>
+        <p class="before-caption">"Dinner with Mom"</p>
+      </div>
+      <div class="transformation-arrow" aria-hidden="true">→</div>
+      <div class="scrapbook-card">
+        <span class="scrapbook-photo" aria-hidden="true">🍛</span>
+        <h3>Sunday Dinner at Rasoi</h3>
+        <p class="scrapbook-dish">Butter Chicken · ★★★★★</p>
+        <div class="scrapbook-tags">
+          <span>📍 Princeton, NJ</span>
+          <span>👩 With Mom</span>
+          <span>🎂 Her Birthday</span>
+        </div>
+        <p class="scrapbook-quote">"Mom said this reminded her of the restaurant we used to visit when I was a kid."</p>
       </div>
     </div>
   </section>
@@ -119,16 +142,21 @@
   <section class="get-started" id="get-started">
     <h2>Ready for your first entry?</h2>
     <p class="section-sub">This is just the beginning — new pages are coming soon, one bite at a time.</p>
-    <a href="entry.html" class="btn btn-primary btn-large">Start My First Entry</a>
+    <a href="smart-entry.html" class="btn btn-primary btn-large">✨ Start My First Entry</a>
   </section>
 
 </main>
 
 <footer class="footer" id="site-footer"></footer>
 
-<script src="js/partials.js?v=2"></script>
-<script src="js/profile.js?v=2"></script>
-<script src="js/geo.js?v=2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/icons.js?v=2"></script>
+<script src="js/roles.js?v=1"></script>
+<script src="js/partials.js?v=5"></script>
+<script src="js/profile.js?v=4"></script>
+<script src="js/geo.js?v=3"></script>
 <script src="js/main.js?v=2"></script>
+<script src="js/index-gate.js?v=2"></script>
 </body>
 </html>

@@ -3,6 +3,22 @@ function setChipSelected(chip, isSelected) {
   chip.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
 }
 
+// Used by js/step-nav.js (jump directly to any step while editing) and
+// entry-view.js (per-section edit links). Kept separate from
+// entries-list.js's STEP_SEQUENCE, which needs "is this step done"
+// predicates for resuming drafts — a different concern from navigation.
+const WIZARD_STEPS = [
+  { page: 'entry.html', icon: '🍽️', label: 'What' },
+  { page: 'entry-when.html', icon: '🕰️', label: 'When' },
+  { page: 'entry-where.html', icon: '📍', label: 'Where' },
+  { page: 'entry-who.html', icon: '👥', label: 'Who' },
+  { page: 'entry-made.html', icon: '👩‍🍳', label: 'Made By' },
+  { page: 'entry-why.html', icon: '🎈', label: 'Why' },
+  { page: 'entry-ingredients.html', icon: '🥕', label: 'Ingredients' },
+  { page: 'entry-loved.html', icon: '💛', label: 'Loved It' },
+  { page: 'entry-photos.html', icon: '📸', label: 'Photos' },
+];
+
 const FAMILY_RELATIONSHIP_LABELS = {
   mom: '👩 Mom',
   dad: '👨 Dad',
@@ -81,6 +97,51 @@ function guessTimeOfDayFromTime() {
   if (hour >= 17 && hour < 20) return 'evening';
   if (hour >= 20 && hour < 23) return 'night';
   return 'late-night';
+}
+
+// Free, instant, client-side duplicate-place detection — no API call, so it
+// doesn't burn the user's rate-limited Gemini key and doesn't depend on the
+// AI proxy landing first. The AI-powered check in js/ai.js stays available
+// as an opt-in deeper pass for trickier name variants this can't catch.
+const PLACE_NAME_NOISE_WORDS = ['restaurant', 'cafe', 'café', 'diner', 'grill', 'kitchen', 'eatery', 'bar', 'bistro', 'the'];
+
+function normalizePlaceName(name) {
+  let n = (name || '').toLowerCase().trim();
+  n = n.replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+  const words = n.split(' ').filter((w) => w && !PLACE_NAME_NOISE_WORDS.includes(w));
+  return words.join(' ');
+}
+
+function findLikelyDuplicatePlaceNames(placeNames) {
+  const unique = Array.from(new Set((placeNames || []).filter(Boolean)));
+  const normalized = unique
+    .map((name) => ({ name, norm: normalizePlaceName(name) }))
+    .filter((p) => p.norm);
+
+  const groups = [];
+  const used = new Set();
+
+  for (let i = 0; i < normalized.length; i++) {
+    if (used.has(normalized[i].name)) continue;
+    const group = [normalized[i].name];
+    used.add(normalized[i].name);
+    for (let j = i + 1; j < normalized.length; j++) {
+      if (used.has(normalized[j].name)) continue;
+      const a = normalized[i].norm;
+      const b = normalized[j].norm;
+      const isMatch = a === b || (a.length >= 4 && b.includes(a)) || (b.length >= 4 && a.includes(b));
+      if (isMatch) {
+        group.push(normalized[j].name);
+        used.add(normalized[j].name);
+      }
+    }
+    if (group.length > 1) {
+      const suggestedName = [...group].sort((x, y) => y.length - x.length)[0];
+      groups.push({ names: group, suggestedName });
+    }
+  }
+
+  return groups;
 }
 
 function isSafeUrl(url) {
@@ -406,6 +467,54 @@ function dateTimeSummaryLabel(entry) {
     return `${dateLabel} · ${timeOfDayLabel(entry.timeOfDay)}`;
   }
   return dateLabel;
+}
+
+// Chrome/Firefox/Edge generally can't decode HEIC/HEIF natively (the format
+// iPhones save photos in by default), so a plain <img>-based decode — what
+// compressImageFile relies on — silently fails there. This converts to a
+// JPEG blob first via heic2any (WASM libheif, no native codec needed), so
+// the rest of the pipeline never has to know the original was HEIC.
+function isHeicFile(file) {
+  return /\.(heic|heif)$/i.test(file.name)
+    || file.type === 'image/heic' || file.type === 'image/heif';
+}
+
+async function normalizeToDecodableImage(file) {
+  if (!isHeicFile(file)) return file;
+  if (typeof heic2any === 'undefined') {
+    throw new Error('HEIC conversion library failed to load');
+  }
+  try {
+    const converted = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
+    return Array.isArray(converted) ? converted[0] : converted;
+  } catch (e) {
+    const detail = (e && (e.message || e.code)) || 'unknown error';
+    // libheif's WASM build only decodes standard 8-bit HEVC HEIC — newer
+    // iPhones' HDR/10-bit capture mode produces a variant it can't read.
+    // No in-browser library currently covers this; it's a real format gap,
+    // not something fixable in app code.
+    if (/not supported/i.test(detail)) {
+      throw new Error(
+        "This photo's format isn't supported by any in-browser HEIC converter — likely an HDR photo from a newer iPhone. " +
+        "Convert it to JPEG on your phone first (share it out as JPEG), or in iPhone Settings go to Camera > Formats and " +
+        "switch to \"Most Compatible\" so new photos save as JPEG directly."
+      );
+    }
+    throw new Error(`HEIC conversion failed: ${detail}`);
+  }
+}
+
+// Tries native <img> decode first (instant for normal formats, and some
+// browsers have partial native HEIC support too), falling back to
+// heic2any conversion only if that fails and the file is HEIC.
+async function decodePhotoForUpload(file, compressOptions) {
+  try {
+    return await compressImageFile(file, compressOptions);
+  } catch (nativeErr) {
+    if (!isHeicFile(file)) throw nativeErr;
+    const decodable = await normalizeToDecodableImage(file);
+    return compressImageFile(decodable, compressOptions);
+  }
 }
 
 function compressImageFile(file, options) {

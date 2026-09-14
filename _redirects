@@ -1,0 +1,25 @@
+# Netlify publishes the repo root ("publish = ." in netlify.toml), which means
+# every file in the project is reachable over HTTP — including the database
+# schema and migrations. RLS is enforced server-side so this grants nobody
+# access, but there is no reason to hand out the table shapes and security
+# policies to anyone who guesses the path. robots.txt only asks crawlers not
+# to look; this actually refuses.
+# The trailing "!" is load-bearing. Netlify only consults these rules when
+# NO file exists at the requested path, so an unforced rule never fires for
+# a real file like supabase/analytics.sql -- which is exactly the case we
+# are trying to block. "404!" forces the rule to win over the static file.
+/supabase/*    /index.html   404!
+
+# The demo harness (dev/seed.js, dev/fake-supabase.js) exists so features that
+# need years of history can be built before the beta has any. It must never be
+# reachable on the live site: it replaces the Supabase client wholesale, so a
+# page that loaded it would show invented meals as if they were real. Blocked
+# here as well as never being referenced by any page.
+/dev/*         /index.html   404!
+
+# The Capacitor native-app projects (android/, and later ios/) are Gradle/
+# Xcode project files for the mobile shell — irrelevant to the website and,
+# same as /supabase/* above, no reason to hand out publicly just because
+# Netlify publishes the whole repo root.
+/android/*     /index.html   404!
+/ios/*         /index.html   404!

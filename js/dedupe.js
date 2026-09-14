@@ -1,7 +1,9 @@
-document.addEventListener('DOMContentLoaded', () => {
-  const findBtn = document.getElementById('find-duplicates-btn');
+document.addEventListener('bitebook:ready', async () => {
   const statusEl = document.getElementById('dedupe-status');
   const groupsEl = document.getElementById('dedupe-groups');
+  const aiCheckBtn = document.getElementById('ai-check-btn');
+
+  let shownKeys = new Set();
 
   function escapeHtmlDedupe(str) {
     const div = document.createElement('div');
@@ -9,23 +11,37 @@ document.addEventListener('DOMContentLoaded', () => {
     return div.innerHTML;
   }
 
-  function placeNameCounts() {
+  async function placeNameCounts() {
     const counts = {};
-    BiteBookStorage.listEntries().forEach((e) => {
+    const entries = await BiteBookStorage.listEntries();
+    entries.forEach((e) => {
       if (!e.placeName) return;
       counts[e.placeName] = (counts[e.placeName] || 0) + 1;
     });
     return counts;
   }
 
-  function renderGroups(groups, counts) {
-    groupsEl.innerHTML = '';
-    if (groups.length === 0) {
-      groupsEl.innerHTML = '<p class="stat-empty-note">No likely duplicates found — your place names look clean!</p>';
-      return;
-    }
+  function groupKey(group) {
+    return group.names.slice().sort().join('|');
+  }
 
-    groups.forEach((group) => {
+  function clearEmptyNote() {
+    const note = groupsEl.querySelector('[data-empty-note]');
+    if (note) note.remove();
+  }
+
+  function showEmptyNoteIfNeeded() {
+    if (groupsEl.children.length === 0) {
+      groupsEl.innerHTML = '<p class="stat-empty-note" data-empty-note>No likely duplicates found — your place names look clean!</p>';
+    }
+  }
+
+  function renderGroups(groups, counts) {
+    clearEmptyNote();
+
+    groups.filter((g) => !shownKeys.has(groupKey(g))).forEach((group) => {
+      shownKeys.add(groupKey(group));
+
       const card = document.createElement('div');
       card.className = 'dedupe-group-card';
 
@@ -49,17 +65,18 @@ document.addEventListener('DOMContentLoaded', () => {
       const nameInput = card.querySelector('[data-merge-name]');
       const mergeStatus = card.querySelector('[data-merge-status]');
 
-      mergeBtn.addEventListener('click', () => {
+      mergeBtn.addEventListener('click', async () => {
         const canonicalName = nameInput.value.trim();
         if (!canonicalName) return;
         let count = 0;
-        BiteBookStorage.listEntries().forEach((e) => {
+        const entries = await BiteBookStorage.listEntries();
+        for (const e of entries) {
           if (group.names.includes(e.placeName)) {
             e.placeName = canonicalName;
-            BiteBookStorage.saveEntry(e);
+            await BiteBookStorage.saveEntry(e);
             count += 1;
           }
-        });
+        }
         mergeStatus.textContent = `✅ Merged — updated ${count} ${count === 1 ? 'entry' : 'entries'}.`;
         mergeBtn.disabled = true;
         skipBtn.disabled = true;
@@ -75,32 +92,44 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  findBtn.addEventListener('click', async () => {
-    findBtn.disabled = true;
-    findBtn.textContent = '✨ Thinking...';
+  async function runHeuristicCheck() {
+    const counts = await placeNameCounts();
+    const groups = findLikelyDuplicatePlaceNames(Object.keys(counts));
+    renderGroups(groups, counts);
+    showEmptyNoteIfNeeded();
+  }
+
+  aiCheckBtn.addEventListener('click', async () => {
+    aiCheckBtn.disabled = true;
+    aiCheckBtn.textContent = '✨ Thinking...';
     statusEl.textContent = '';
     statusEl.classList.remove('error');
-    groupsEl.innerHTML = '';
 
-    const counts = placeNameCounts();
+    const counts = await placeNameCounts();
     const placeNames = Object.keys(counts);
 
     if (placeNames.length < 2) {
       statusEl.textContent = 'Not enough place names logged yet to check for duplicates.';
-      findBtn.disabled = false;
-      findBtn.textContent = '✨ Find Possible Duplicates';
+      aiCheckBtn.disabled = false;
+      aiCheckBtn.textContent = '🔍 Also Check for Trickier Matches (AI)';
       return;
     }
 
     try {
       const groups = await BiteBookAI.findDuplicatePlaces(placeNames);
+      const beforeCount = shownKeys.size;
       renderGroups(groups, counts);
+      if (shownKeys.size === beforeCount) {
+        statusEl.textContent = 'The AI check didn’t find anything new.';
+      }
     } catch (err) {
       statusEl.textContent = BiteBookAI.friendlyErrorMessage(err);
       statusEl.classList.add('error');
     } finally {
-      findBtn.disabled = false;
-      findBtn.textContent = '✨ Find Possible Duplicates';
+      aiCheckBtn.disabled = false;
+      aiCheckBtn.textContent = '🔍 Also Check for Trickier Matches (AI)';
     }
   });
+
+  await runHeuristicCheck();
 });

@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('bitebook:ready', async () => {
   const foodInput = document.getElementById('food-name');
   const mealSection = document.getElementById('section-meal-type');
   const cuisineSection = document.getElementById('section-cuisine');
@@ -11,11 +11,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const savedToast = document.getElementById('saved-toast');
   const autosaveHint = document.getElementById('autosave-hint');
 
+  let menuLookup = null;
   let selectedMealType = null;
   let selectedCuisine = null;
   let mealTypeAutoPicked = false;
   let entryId = null;
   let createdAt = null;
+  let cachedEntry = null;
 
   function debounce(fn, delay) {
     let timer;
@@ -95,6 +97,11 @@ document.addEventListener('DOMContentLoaded', () => {
   cuisineOtherInput.addEventListener('input', () => scheduleSave());
 
   foodInput.addEventListener('input', () => {
+    // Typing over a menu name makes it theirs again, so the entry should
+    // stop claiming the restaurant wrote it.
+    if (cachedEntry && cachedEntry.foodSource === 'menu' && foodInput.value.trim() !== cachedEntry.food) {
+      cachedEntry = { ...cachedEntry, foodSource: null, menuUrl: null, menuDishDescription: null };
+    }
     if (foodInput.value.trim().length > 0) {
       showMealSection();
       if (!selectedMealType) {
@@ -116,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function buildEntry() {
-    const existing = BiteBookStorage.getEntry(entryId) || {};
+    const existing = cachedEntry || {};
     const cuisine = selectedCuisine === 'other'
       ? cuisineOtherInput.value.trim()
       : selectedCuisine;
@@ -128,26 +135,31 @@ document.addEventListener('DOMContentLoaded', () => {
       mealType: selectedMealType,
       mealTypeAutoPicked,
       cuisine: cuisine || null,
+      foodSource: existing.foodSource || null,
+      menuUrl: existing.menuUrl || null,
+      menuDishDescription: existing.menuDishDescription || null,
       status: 'draft',
       createdAt: createdAt || existing.createdAt || now,
       updatedAt: now,
     };
   }
 
-  function saveNow() {
+  async function saveNow() {
     const hasContent = foodInput.value.trim() || selectedMealType || selectedCuisine;
     if (!hasContent) return;
     const entry = buildEntry();
     if (!createdAt) createdAt = entry.createdAt;
-    const ok = BiteBookStorage.saveEntry(entry);
+    cachedEntry = entry;
+    const ok = await BiteBookStorage.saveEntry(entry);
     flashAutosaveBadge(autosaveHint, ok);
   }
 
   const scheduleSave = debounce(saveNow, 500);
 
-  function restoreFromStorage() {
-    const existing = BiteBookStorage.getEntry(entryId);
+  async function restoreFromStorage() {
+    const existing = await BiteBookStorage.getEntry(entryId);
     if (!existing) return;
+    cachedEntry = existing;
     createdAt = existing.createdAt;
     if (existing.food) foodInput.value = existing.food;
     if (existing.food) showMealSection();
@@ -168,19 +180,56 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   entryId = resolveEntryId();
-  restoreFromStorage();
+  await restoreFromStorage();
 
-  continueBtn.addEventListener('click', () => {
-    saveNow();
+  // Only useful once the entry knows where it was eaten — a menu needs a
+  // restaurant. On a brand-new entry that comes later in the wizard, so the
+  // button stays hidden until there is somewhere to look up.
+  //
+  // Description only here, deliberately: by this point a photo lives in
+  // Storage behind a signed URL rather than in memory, and fetching it back
+  // just to send it on is a lot of work for a small gain. Smart Entry, where
+  // the photo IS still in memory, does the picture-matching version.
+  menuLookup = BiteBookMenuLookup.mount('menu-lookup', {
+    getPlace: () => ({
+      name: cachedEntry && cachedEntry.placeName,
+      address: cachedEntry && cachedEntry.placeAddress,
+      city: cachedEntry && cachedEntry.city,
+    }),
+    getDescription: () => [
+      foodInput.value.trim(),
+      cachedEntry && cachedEntry.reflection,
+    ].filter(Boolean).join('. '),
+    onPick: (dish, result) => {
+      foodInput.value = dish.name;
+      cachedEntry = {
+        ...(cachedEntry || {}),
+        foodSource: 'menu',
+        menuUrl: result.menuUrl || null,
+        menuDishDescription: dish.description || null,
+      };
+      showMealSection();
+      if (!selectedMealType) {
+        mealTypeAutoPicked = true;
+        selectMealChip(guessMealType(), true);
+      }
+      showCuisineSection();
+      updateContinueState();
+      scheduleSave();
+    },
+  });
+
+  continueBtn.addEventListener('click', async () => {
+    await saveNow();
     savedToast.classList.add('visible');
     continueBtn.disabled = true;
     setTimeout(() => {
       window.location.href = `entry-when.html?id=${encodeURIComponent(entryId)}`;
-    }, 500);
+    }, 400);
   });
 
-  document.getElementById('finish-later-btn').addEventListener('click', () => {
-    saveNow();
+  document.getElementById('finish-later-btn').addEventListener('click', async () => {
+    await saveNow();
     window.location.href = 'entries.html';
   });
 

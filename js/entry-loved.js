@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('bitebook:ready', async () => {
   const likedChips = document.querySelectorAll('#liked-chips .chip');
   const likedOtherWrap = document.getElementById('liked-other-wrap');
   const likedOtherInput = document.getElementById('liked-other');
@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let entryId = null;
   let createdAt = null;
+  let cachedEntry = null;
   let hasInteracted = false;
   const selectedQualities = new Set();
   let rating = 0;
@@ -44,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function buildEntry() {
-    const existing = BiteBookStorage.getEntry(entryId) || {};
+    const existing = cachedEntry || {};
     const now = new Date().toISOString();
     return {
       ...existing,
@@ -61,11 +62,12 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
-  function saveNow() {
+  async function saveNow() {
     if (!hasInteracted) return;
     const entry = buildEntry();
     if (!createdAt) createdAt = entry.createdAt;
-    const ok = BiteBookStorage.saveEntry(entry);
+    cachedEntry = entry;
+    const ok = await BiteBookStorage.saveEntry(entry);
     flashAutosaveBadge(autosaveHint, ok);
   }
 
@@ -170,9 +172,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   reflectionInput.addEventListener('input', () => scheduleSave());
 
-  function restoreFromStorage() {
-    const existing = BiteBookStorage.getEntry(entryId);
+  async function restoreFromStorage() {
+    const existing = await BiteBookStorage.getEntry(entryId);
     if (!existing) return;
+    cachedEntry = existing;
     createdAt = existing.createdAt;
 
     (existing.likedQualities || []).forEach((q) => selectedQualities.add(q));
@@ -208,20 +211,20 @@ document.addEventListener('DOMContentLoaded', () => {
   entryId = resolveEntryId();
   if (entryId) {
     backBtn.href = `entry-ingredients.html?id=${encodeURIComponent(entryId)}`;
-    restoreFromStorage();
+    await restoreFromStorage();
   }
 
-  continueBtn.addEventListener('click', () => {
-    saveNow();
+  continueBtn.addEventListener('click', async () => {
+    await saveNow();
     savedToast.classList.add('visible');
     continueBtn.disabled = true;
     setTimeout(() => {
       window.location.href = `entry-photos.html?id=${encodeURIComponent(entryId)}`;
-    }, 500);
+    }, 400);
   });
 
-  document.getElementById('finish-later-btn').addEventListener('click', () => {
-    saveNow();
+  document.getElementById('finish-later-btn').addEventListener('click', async () => {
+    await saveNow();
     window.location.href = 'entries.html';
   });
 

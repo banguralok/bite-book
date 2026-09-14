@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign In — Bite Book</title>
+<link rel="icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=7">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<main class="wizard">
+  <div class="wizard-card" style="margin-top: 60px;">
+    <p class="wizard-kicker">welcome</p>
+    <h1>🍜 Sign In to Bite Book</h1>
+    <p class="wizard-help" id="login-help">
+      Sign in with your password.
+    </p>
+
+    <div class="field-group">
+      <input type="email" id="login-email" class="text-input" placeholder="you@example.com" autocomplete="email">
+    </div>
+
+    <div class="field-group" id="password-wrap">
+      <input type="password" id="login-password" class="text-input" placeholder="Password" autocomplete="current-password">
+      <p class="field-sublabel" id="password-strength-hint"></p>
+    </div>
+
+    <div class="field-group" id="password-confirm-wrap" style="display: none;">
+      <input type="password" id="login-password-confirm" class="text-input" placeholder="Confirm password" autocomplete="new-password">
+      <p class="field-sublabel" id="password-confirm-hint"></p>
+    </div>
+
+    <p class="field-sublabel" id="forgot-password-wrap">
+      <button type="button" class="wizard-link-start" id="forgot-password-btn" style="background:none;border:none;cursor:pointer;padding:0;font-family:inherit;text-decoration:underline;">Forgot your password?</button>
+      <br>Bite Book signs you in with the email you originally signed up with — there's no separate username.
+    </p>
+
+    <p class="upload-status" id="login-status"></p>
+
+    <div class="wizard-actions" style="border-top: none; padding-top: 8px;">
+      <button type="button" class="wizard-link-start" id="toggle-mode-btn" style="background:none;border:none;cursor:pointer;padding:0;font-family:inherit;">✨ New here? Create an account</button>
+      <div class="wizard-actions-right">
+        <button type="button" class="btn btn-primary btn-large" id="login-btn">Sign In</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="js/supabase-config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/icons.js?v=2"></script>
+<script src="js/pw-policy.js"></script>
+<script src="js/pw-toggle.js"></script>
+<script src="js/login.js"></script>
+</body>
+</html>

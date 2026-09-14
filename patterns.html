@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your Patterns — Bite Book</title>
+<link rel="icon" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff8a4c">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=7">
+</head>
+<body>
+
+<header class="nav" id="site-header"></header>
+
+<main class="entries-page">
+  <a href="entries.html" class="wizard-link-start" style="margin-bottom: 20px; display: inline-flex;">‹ Back to My Entries</a>
+
+  <div class="entries-header">
+    <p class="eyebrow">the shape of how you eat</p>
+    <h1>Your Patterns</h1>
+    <p class="section-sub" style="margin: 12px 0 0;">Click anything here to see the meals behind it.</p>
+  </div>
+
+  <!-- One filter row, scoping everything below it. -->
+  <div class="filter-row" id="pattern-filters">
+    <div class="filter-group">
+      <span class="filter-label">Period</span>
+      <div class="chip-grid" id="range-chips"></div>
+    </div>
+    <div class="filter-group" id="place-filter-group" style="display: none;">
+      <span class="filter-label">Place</span>
+      <select class="role-select" id="place-filter"></select>
+    </div>
+  </div>
+
+  <div id="pattern-tiles" class="stat-tiles"></div>
+
+  <nav class="lens-tabs" id="lens-tabs" role="tablist">
+    <button type="button" class="lens-tab selected" role="tab" aria-selected="true" data-lens="rhythm">When you eat</button>
+    <button type="button" class="lens-tab" role="tab" aria-selected="false" data-lens="what">What you have</button>
+    <button type="button" class="lens-tab" role="tab" aria-selected="false" data-lens="where">Where &amp; why</button>
+    <button type="button" class="lens-tab" role="tab" aria-selected="false" data-lens="years">Across the years</button>
+  </nav>
+
+  <div id="pattern-empty" class="empty-state" style="display: none;">
+    <div class="empty-state-icon"><span data-icon="chart" data-icon-class="icn-lg"></span></div>
+    <h3>Nothing to see yet</h3>
+    <p>Patterns need a few meals to find. Log some and come back.</p>
+    <a href="smart-entry.html" class="btn btn-primary"><span data-icon="sparkle"></span> Log a Meal</a>
+  </div>
+
+  <section class="lens-panel" id="lens-rhythm">
+    <div class="chart-card">
+      <h2 class="chart-title">Your year, day by day</h2>
+      <p class="chart-sub">Darker means more logged that day. Grey means nothing was.</p>
+      <div id="calendar-heat"></div>
+    </div>
+
+    <div class="chart-card">
+      <h2 class="chart-title">When you actually eat</h2>
+      <p class="chart-sub">Every meal you've logged, by day of the week and time of day.</p>
+      <div id="rhythm-grid"></div>
+    </div>
+  </section>
+
+  <section class="lens-panel" id="lens-what" hidden>
+    <div class="chart-card">
+      <h2 class="chart-title">What you eat most</h2>
+      <div id="top-foods"></div>
+    </div>
+
+    <div class="chart-card">
+      <h2 class="chart-title">What you drink most</h2>
+      <div id="top-drinks"></div>
+    </div>
+
+    <div class="chart-card">
+      <h2 class="chart-title">What you reach for, month by month</h2>
+      <p class="chart-sub">The kinds of food you logged in each month.</p>
+      <div id="cuisine-months"></div>
+    </div>
+  </section>
+
+  <section class="lens-panel" id="lens-years" hidden>
+    <div class="chart-card">
+      <h2 class="chart-title">Every year you've logged</h2>
+      <p class="chart-sub">One row per year, one cell per month. Darker months are busier ones.</p>
+      <div id="year-grid"></div>
+    </div>
+
+    <div class="chart-card">
+      <h2 class="chart-title">Everyday meals against the special ones</h2>
+      <p class="chart-sub">A meal counts as special when it was logged for an occasion — a birthday, an anniversary, a celebration.</p>
+      <div id="year-occasions"></div>
+    </div>
+
+    <div class="chart-card">
+      <h2 class="chart-title">Year by year</h2>
+      <div id="year-compare"></div>
+    </div>
+  </section>
+
+  <section class="lens-panel" id="lens-where" hidden>
+    <div class="chart-card">
+      <h2 class="chart-title">Towns and cities</h2>
+      <div id="top-cities"></div>
+    </div>
+
+    <div class="chart-card">
+      <h2 class="chart-title">Countries</h2>
+      <div id="top-countries"></div>
+    </div>
+
+    <div class="chart-card">
+      <h2 class="chart-title">The occasions</h2>
+      <div id="top-occasions"></div>
+    </div>
+  </section>
+</main>
+
+<div class="chart-tip" id="chart-tip" role="status" aria-live="polite"></div>
+
+<footer class="footer" id="site-footer"></footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/icons.js?v=2"></script>
+<script src="js/roles.js?v=1"></script>
+<script src="js/partials.js?v=5"></script>
+<script src="js/platform.js"></script>
+<script src="js/track.js?v=1"></script>
+<script src="js/profile.js?v=4"></script>
+<script src="js/geo.js?v=3"></script>
+<script src="js/storage.js?v=5"></script>
+<script src="js/labels.js?v=2"></script>
+<script src="js/search.js?v=1"></script>
+<script src="js/nudges.js?v=1"></script>
+<script src="js/patterns.js?v=2"></script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your Year in Food — Bite Book</title>
+<link rel="icon" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff8a4c">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=7">
+</head>
+<body>
+
+<header class="nav" id="site-header"></header>
+
+<main class="entries-page">
+  <a href="entries.html" class="wizard-link-start" style="margin-bottom: 20px; display: inline-flex;">‹ Back to My Entries</a>
+
+  <div class="entries-header">
+    <p class="eyebrow">a year of eating</p>
+    <h1 id="year-heading">Your year in food</h1>
+  </div>
+
+  <div class="chip-grid" id="year-picker" style="justify-content: center; margin-bottom: 18px;"></div>
+
+  <div id="year-empty" class="empty-state" style="display: none;">
+    <div class="empty-state-icon"><span data-icon="calendar" data-icon-class="icn-lg"></span></div>
+    <h3>Nothing logged that year</h3>
+    <p>Pick another year above, or go and eat something memorable.</p>
+    <a href="smart-entry.html" class="btn btn-primary"><span data-icon="sparkle"></span> Log a Meal</a>
+  </div>
+
+  <div id="year-body" style="display: none;">
+    <div id="year-photos" class="year-photo-strip"></div>
+
+    <div id="year-tiles" class="stat-tiles"></div>
+
+    <div id="year-highlights" class="on-this-day" style="display: flex; margin-top: 26px;"></div>
+
+    <div class="entries-actions-row" style="margin-top: 26px;">
+      <button type="button" class="link-pill" id="year-share-btn"><span data-icon="share"></span> Share My Year</button>
+      <a href="stats.html" class="link-pill"><span data-icon="chart"></span> Your Food Story</a>
+      <a href="ranking.html" class="link-pill"><span data-icon="trophy"></span> Rankings</a>
+    </div>
+  </div>
+</main>
+
+<footer class="footer" id="site-footer"></footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/icons.js?v=2"></script>
+<script src="js/roles.js?v=1"></script>
+<script src="js/partials.js?v=5"></script>
+<script src="js/platform.js"></script>
+<script src="js/track.js?v=1"></script>
+<script src="js/profile.js?v=4"></script>
+<script src="js/geo.js?v=3"></script>
+<script src="js/storage.js?v=5"></script>
+<script src="js/labels.js?v=2"></script>
+<script src="js/share-card.js?v=2"></script>
+<script src="js/streak.js?v=2"></script>
+<script src="js/search.js?v=1"></script>
+<script src="js/year-review.js?v=1"></script>
+</body>
+</html>

@@ -4,14 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Your Rankings — Bite Book</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍜</text></svg>">
+<link rel="icon" href="icons/icon-192.png">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#ff8a4c">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=2">
+<link rel="stylesheet" href="css/style.css?v=7">
 </head>
 <body>
 
@@ -21,28 +21,48 @@
   <a href="entries.html" class="wizard-link-start" style="margin-bottom: 20px; display: inline-flex;">‹ Back to My Entries</a>
 
   <div class="entries-header">
-    <p class="eyebrow">the ultimate list</p>
+    <p class="eyebrow">the highlights</p>
     <h1>Your Rankings</h1>
-    <p class="section-sub" style="margin: 12px 0 0;">Your finished entries, in whatever order feels right. Use the arrows to reorder.</p>
+    <p class="section-sub" style="margin: 12px 0 0;">The best of what you've logged, sorted out automatically.</p>
   </div>
 
-  <div id="ranking-list" class="ranking-list"></div>
+  <div id="collections-content"></div>
 
-  <div id="ranking-empty" class="empty-state" style="display: none;">
+  <div id="collections-empty" class="empty-state" style="display: none;">
     <div class="empty-state-icon">🏆</div>
-    <h3>Nothing to rank yet</h3>
-    <p>Finish an entry and it'll show up here.</p>
+    <h3>Nothing to highlight yet</h3>
+    <p>Finish a few entries — rate them, note who you were with — and collections like Hall of Fame and Family Favorites will start showing up here.</p>
     <a href="entries.html" class="btn btn-primary">Back to My Entries</a>
+  </div>
+
+  <button type="button" class="toggle-link" id="manual-ranking-toggle" style="margin-top: 10px;">Or rank them yourself, one at a time ▾</button>
+  <div id="manual-ranking-wrap" style="display: none; margin-top: 14px;">
+    <div id="ranking-list" class="ranking-list"></div>
+
+    <div id="ranking-empty" class="empty-state" style="display: none;">
+      <div class="empty-state-icon">🏆</div>
+      <h3>Nothing to rank yet</h3>
+      <p>Finish an entry and it'll show up here.</p>
+      <a href="entries.html" class="btn btn-primary">Back to My Entries</a>
+    </div>
   </div>
 </main>
 
 <footer class="footer" id="site-footer"></footer>
 
-<script src="js/partials.js?v=2"></script>
-<script src="js/profile.js?v=2"></script>
-<script src="js/geo.js?v=2"></script>
-<script src="js/storage.js?v=2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/icons.js?v=2"></script>
+<script src="js/roles.js?v=1"></script>
+<script src="js/partials.js?v=5"></script>
+<script src="js/platform.js"></script>
+<script src="js/track.js?v=1"></script>
+<script src="js/profile.js?v=4"></script>
+<script src="js/geo.js?v=3"></script>
+<script src="js/storage.js?v=5"></script>
 <script src="js/labels.js?v=2"></script>
+<script src="js/search.js?v=1"></script>
 <script src="js/ranking.js"></script>
 </body>
 </html>

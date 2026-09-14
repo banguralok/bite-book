@@ -1,3 +1,12 @@
 .DS_Store
 *.log
 __pycache__/
+.claude/settings.local.json
+
+# Capacitor mobile shell — node deps and signing keys never get committed;
+# the android/ (and later ios/) native project has its own generated
+# .gitignore for build output, but a keystore is a real secret and stays
+# a repo-wide rule regardless of where it ends up.
+node_modules/
+*.keystore
+*.jks

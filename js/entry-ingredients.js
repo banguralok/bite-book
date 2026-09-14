@@ -1,5 +1,6 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('bitebook:ready', async () => {
   const textInput = document.getElementById('ingredients-text');
+  const drinksInput = document.getElementById('drinks-text');
   const linkInput = document.getElementById('ingredients-link');
   const linkBadge = document.getElementById('link-platform-badge');
   const fileUploadBtn = document.getElementById('file-upload-btn');
@@ -19,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let entryId = null;
   let createdAt = null;
+  let cachedEntry = null;
   let currentFile = null;
 
   function debounce(fn, delay) {
@@ -30,12 +32,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function buildEntry() {
-    const existing = BiteBookStorage.getEntry(entryId) || {};
+    const existing = cachedEntry || {};
     const now = new Date().toISOString();
     return {
       ...existing,
       id: entryId,
       ingredientsText: textInput.value.trim() || null,
+      drinks: drinksInput.value.trim() || null,
       ingredientsLink: normalizeLinkInput(linkInput.value),
       ingredientsFile: currentFile,
       createdAt: createdAt || existing.createdAt || now,
@@ -43,10 +46,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
-  function saveNow() {
+  async function saveNow() {
     const entry = buildEntry();
     if (!createdAt) createdAt = entry.createdAt;
-    const ok = BiteBookStorage.saveEntry(entry);
+    cachedEntry = entry;
+    const ok = await BiteBookStorage.saveEntry(entry);
     flashAutosaveBadge(autosaveHint, ok);
     return ok;
   }
@@ -66,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
     filePreview.classList.add('visible');
     filePreviewName.textContent = currentFile.name;
     if (currentFile.type && currentFile.type.startsWith('image/')) {
-      filePreviewThumb.src = currentFile.dataUrl;
+      filePreviewThumb.src = currentFile.url || currentFile.dataUrl;
       filePreviewThumb.style.display = 'block';
       filePreviewIcon.style.display = 'none';
     } else {
@@ -83,6 +87,8 @@ document.addEventListener('DOMContentLoaded', () => {
     linkBadge.classList.toggle('visible', !!linkInput.value.trim());
     scheduleSave();
   });
+
+  drinksInput.addEventListener('input', () => scheduleSave());
 
   linkInput.addEventListener('blur', () => {
     const value = linkInput.value.trim();
@@ -105,16 +111,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       const previousFile = currentFile;
       currentFile = { name: file.name, type: file.type, size: file.size, dataUrl: reader.result };
-      const ok = saveNow();
+      const ok = await saveNow();
       if (ok) {
         renderFilePreview();
         showUploadStatus(`✅ "${file.name}" attached.`, false);
       } else {
         currentFile = previousFile;
-        showUploadStatus("⚠️ That didn't fit in your browser's storage — try a smaller file, or use a link instead.", true);
+        showUploadStatus("⚠️ That didn't upload — try a smaller file, or use a link instead.", true);
       }
     };
     reader.onerror = () => {
@@ -130,12 +136,14 @@ document.addEventListener('DOMContentLoaded', () => {
     scheduleSave();
   });
 
-  function restoreFromStorage() {
-    const existing = BiteBookStorage.getEntry(entryId);
+  async function restoreFromStorage() {
+    const existing = await BiteBookStorage.getEntry(entryId);
     if (!existing) return;
+    cachedEntry = existing;
     createdAt = existing.createdAt;
 
     if (existing.ingredientsText) textInput.value = existing.ingredientsText;
+    if (existing.drinks) drinksInput.value = existing.drinks;
     if (existing.ingredientsLink) {
       linkInput.value = existing.ingredientsLink;
       linkBadge.textContent = linkPlatformLabel(existing.ingredientsLink);
@@ -160,20 +168,20 @@ document.addEventListener('DOMContentLoaded', () => {
   entryId = resolveEntryId();
   if (entryId) {
     backBtn.href = `entry-why.html?id=${encodeURIComponent(entryId)}`;
-    restoreFromStorage();
+    await restoreFromStorage();
   }
 
-  continueBtn.addEventListener('click', () => {
-    saveNow();
+  continueBtn.addEventListener('click', async () => {
+    await saveNow();
     savedToast.classList.add('visible');
     continueBtn.disabled = true;
     setTimeout(() => {
       window.location.href = `entry-loved.html?id=${encodeURIComponent(entryId)}`;
-    }, 500);
+    }, 400);
   });
 
-  document.getElementById('finish-later-btn').addEventListener('click', () => {
-    saveNow();
+  document.getElementById('finish-later-btn').addEventListener('click', async () => {
+    await saveNow();
     window.location.href = 'entries.html';
   });
 

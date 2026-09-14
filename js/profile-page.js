@@ -1,4 +1,30 @@
-document.addEventListener('DOMContentLoaded', () => {
+// Shows which plan this account is on. While BiteBookRoles.ENFORCE is false
+// this is purely informational — nothing is switched off — so the copy says
+// what the plan IS rather than what a free account is missing. Selling
+// upgrades to a beta group of relatives would be a strange thing to do.
+function renderPlanStrip() {
+  const el = document.getElementById('plan-strip');
+  if (!el || typeof BiteBookRoles === 'undefined') return;
+
+  const plan = BiteBookRoles.plan();
+  const role = BiteBookRoles.get();
+  const icon = role === 'admin' ? 'chart' : (role === 'power' ? 'star' : 'person');
+
+  const note = BiteBookRoles.isEnforcing()
+    ? (BiteBookRoles.isPaid() ? '' : 'Sharing and family are part of the Power plan.')
+    : 'Everything is switched on for everyone during the beta.';
+
+  el.style.display = 'flex';
+  el.innerHTML = `
+    <span class="plan-strip-icon">${BiteBookIcons.svg(icon)}</span>
+    <span class="plan-strip-text">
+      <strong>${plan.label} plan</strong>
+      <span>${plan.blurb}${note ? ' · ' + note : ''}</span>
+    </span>
+  `;
+}
+
+document.addEventListener('bitebook:ready', () => {
   const nameInput = document.getElementById('profile-name');
   const avatarChips = document.querySelectorAll('#avatar-chips .chip');
   const birthdayInput = document.getElementById('profile-birthday');
@@ -9,10 +35,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const saveBtn = document.getElementById('save-profile-btn');
   const savedToast = document.getElementById('saved-toast');
 
-  const geminiKeyInput = document.getElementById('gemini-api-key');
-  const saveKeyBtn = document.getElementById('save-key-btn');
-  const removeKeyBtn = document.getElementById('remove-key-btn');
-  const keyStatus = document.getElementById('key-status');
+  const newPasswordInput = document.getElementById('new-password');
+  const newPasswordConfirmInput = document.getElementById('new-password-confirm');
+  const setPasswordBtn = document.getElementById('set-password-btn');
+  const passwordStatus = document.getElementById('password-status');
+  const newPasswordStrengthHint = document.getElementById('new-password-strength-hint');
+  BiteBookPwToggle.attach(newPasswordInput);
+  BiteBookPwToggle.attach(newPasswordConfirmInput);
 
   const familyListEl = document.getElementById('family-list');
   const addFamilyBtn = document.getElementById('add-family-btn');
@@ -38,6 +67,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
   avatarChips.forEach((chip) => {
     chip.addEventListener('click', () => selectAvatar(chip.dataset.value));
+  });
+
+  newPasswordInput.addEventListener('input', () => {
+    const label = BiteBookPasswordPolicy.strengthLabel(newPasswordInput.value);
+    newPasswordStrengthHint.textContent = label ? `Strength: ${label}` : '';
+  });
+
+  setPasswordBtn.addEventListener('click', async () => {
+    const password = newPasswordInput.value;
+    passwordStatus.classList.remove('error');
+    const check = BiteBookPasswordPolicy.validate(password, BiteBookProfile.get().email);
+    if (!check.ok) {
+      passwordStatus.textContent = check.reason;
+      passwordStatus.classList.add('error');
+      return;
+    }
+    if (password !== newPasswordConfirmInput.value) {
+      passwordStatus.textContent = "Those two passwords don't match.";
+      passwordStatus.classList.add('error');
+      return;
+    }
+    setPasswordBtn.disabled = true;
+    const { error } = await supabaseClient.auth.updateUser({ password });
+    setPasswordBtn.disabled = false;
+    if (error) {
+      passwordStatus.textContent = `Couldn't set password: ${error.message}`;
+      passwordStatus.classList.add('error');
+    } else {
+      passwordStatus.textContent = '✅ Password set — you can use it next time you sign in.';
+      newPasswordInput.value = '';
+      newPasswordConfirmInput.value = '';
+    }
   });
 
   function resetGeoButton() {
@@ -131,6 +192,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   addFamilyBtn.addEventListener('click', () => {
+    const why = (typeof BiteBookRoles !== 'undefined')
+      ? BiteBookRoles.blockedReason('family-members') : null;
+    if (why) {
+      const status = document.getElementById('plan-strip');
+      if (status) status.querySelector('.plan-strip-text span').textContent = why;
+      return;
+    }
     resetFamilyForm();
     familyForm.style.display = 'block';
     addFamilyBtn.style.display = 'none';
@@ -168,42 +236,24 @@ document.addEventListener('DOMContentLoaded', () => {
     addFamilyBtn.style.display = 'inline-flex';
   });
 
-  // ---------- AI Assistant (Gemini API key) ----------
-
-  function refreshKeyStatus() {
-    const settings = BiteBookSettings.get();
-    if (settings && settings.geminiApiKey) {
-      keyStatus.textContent = '🔑 A key is saved — paste a new one below to replace it.';
-      keyStatus.classList.remove('error');
-      removeKeyBtn.style.display = 'inline-block';
-    } else {
-      keyStatus.textContent = '';
-      removeKeyBtn.style.display = 'none';
-    }
-  }
-
-  saveKeyBtn.addEventListener('click', () => {
-    const key = geminiKeyInput.value.trim();
-    if (!key) return;
-    BiteBookSettings.save({ ...BiteBookSettings.get(), geminiApiKey: key });
-    geminiKeyInput.value = '';
-    refreshKeyStatus();
-    keyStatus.textContent = '✅ Key saved.';
-  });
-
-  removeKeyBtn.addEventListener('click', () => {
-    const settings = BiteBookSettings.get();
-    delete settings.geminiApiKey;
-    BiteBookSettings.save(settings);
-    refreshKeyStatus();
-  });
-
-  refreshKeyStatus();
-
   // ---------- Load / Save ----------
 
   function restoreFromProfile() {
     const profile = BiteBookProfile.get();
+
+    const emailLine = document.getElementById('profile-email-line');
+    if (profile && profile.email && emailLine) {
+      emailLine.textContent = `Signed in as ${profile.email}`;
+    }
+
+    const isFirstTime = new URLSearchParams(window.location.search).get('welcome') === '1';
+    if (isFirstTime) {
+      const heading = document.getElementById('profile-heading');
+      const subhead = document.getElementById('profile-subhead');
+      if (heading) heading.textContent = 'Welcome to Bite Book! 👋';
+      if (subhead) subhead.textContent = "Let's get your profile set up — pick a name and avatar so people know it's you.";
+    }
+
     if (!profile) return;
     if (profile.name) nameInput.value = profile.name;
     if (profile.avatar) selectAvatar(profile.avatar);
@@ -212,10 +262,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (profile.homeAddress) homeAddressInput.value = profile.homeAddress;
     if (profile.homeCoords) homeCoords = profile.homeCoords;
     if (profile.familyMembers) familyMembers = profile.familyMembers;
+    renderPlanStrip();
     renderFamilyList();
   }
 
-  saveBtn.addEventListener('click', () => {
+  saveBtn.addEventListener('click', async () => {
     const profile = {
       name: nameInput.value.trim() || null,
       avatar: selectedAvatar,
@@ -224,11 +275,27 @@ document.addEventListener('DOMContentLoaded', () => {
       homeAddress: homeAddressInput.value.trim() || null,
       homeCoords: homeAddressInput.value.trim() ? homeCoords : null,
       familyMembers,
-      updatedAt: new Date().toISOString(),
     };
-    BiteBookProfile.save(profile);
-    savedToast.classList.add('visible');
-    setTimeout(() => savedToast.classList.remove('visible'), 2000);
+    saveBtn.disabled = true;
+    const ok = await BiteBookProfile.save(profile);
+    saveBtn.disabled = false;
+    if (ok) {
+      savedToast.classList.add('visible');
+      setTimeout(() => savedToast.classList.remove('visible'), 2000);
+      const params = new URLSearchParams(window.location.search);
+      const wasFirstTime = params.get('welcome') === '1';
+      if (wasFirstTime) {
+        const next = params.get('next') || 'entries.html';
+        setTimeout(() => { window.location.href = next; }, 900);
+      }
+    } else {
+      savedToast.textContent = "⚠️ Couldn't save — check your connection and try again.";
+      savedToast.classList.add('visible');
+      setTimeout(() => {
+        savedToast.classList.remove('visible');
+        savedToast.textContent = '🎉 Profile saved!';
+      }, 3000);
+    }
   });
 
   restoreFromProfile();

@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Your Stats — Bite Book</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍜</text></svg>">
+<title>Your Food Story — Bite Book</title>
+<link rel="icon" href="icons/icon-192.png">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#ff8a4c">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=2">
+<link rel="stylesheet" href="css/style.css?v=7">
 </head>
 <body>
 
@@ -21,9 +21,9 @@
   <a href="entries.html" class="wizard-link-start" style="margin-bottom: 20px; display: inline-flex;">‹ Back to My Entries</a>
 
   <div class="entries-header">
-    <p class="eyebrow">the numbers</p>
-    <h1>Your Stats</h1>
-    <p class="section-sub" style="margin: 12px 0 0;">A little snapshot of your food story so far.</p>
+    <p class="eyebrow">your story so far</p>
+    <h1>Your Food Story</h1>
+    <p class="section-sub" style="margin: 12px 0 0;">What your entries say about how you eat.</p>
   </div>
 
   <div id="stats-content"></div>
@@ -31,13 +31,20 @@
 
 <footer class="footer" id="site-footer"></footer>
 
-<script src="js/partials.js?v=2"></script>
-<script src="js/profile.js?v=2"></script>
-<script src="js/geo.js?v=2"></script>
-<script src="js/storage.js?v=2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/icons.js?v=2"></script>
+<script src="js/roles.js?v=1"></script>
+<script src="js/partials.js?v=5"></script>
+<script src="js/platform.js"></script>
+<script src="js/track.js?v=1"></script>
+<script src="js/profile.js?v=4"></script>
+<script src="js/geo.js?v=3"></script>
+<script src="js/storage.js?v=5"></script>
 <script src="js/labels.js?v=2"></script>
-<script src="js/settings.js?v=2"></script>
-<script src="js/ai.js?v=2"></script>
+<script src="js/ai.js?v=4"></script>
+<script src="js/search.js?v=1"></script>
 <script src="js/stats.js"></script>
 </body>
 </html>
