@@ -1,0 +1,13 @@
+{
+  "name": "bite-book",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Native Android/iOS shell for Bite Book (Capacitor) — the web app itself has no build step and stays plain HTML/CSS/JS.",
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.2"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/core": "^8.5.2"
+  }
+}

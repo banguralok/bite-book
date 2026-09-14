@@ -16,3 +16,10 @@
 # page that loaded it would show invented meals as if they were real. Blocked
 # here as well as never being referenced by any page.
 /dev/*         /index.html   404!
+
+# The Capacitor native-app projects (android/, and later ios/) are Gradle/
+# Xcode project files for the mobile shell — irrelevant to the website and,
+# same as /supabase/* above, no reason to hand out publicly just because
+# Netlify publishes the whole repo root.
+/android/*     /index.html   404!
+/ios/*         /index.html   404!

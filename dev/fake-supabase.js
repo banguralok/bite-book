@@ -91,6 +91,7 @@
         mode = 'insert';
         const rows = Array.isArray(payload) ? payload : [payload];
         pending = rows.map((r) => Object.assign({
+          id: crypto.randomUUID ? crypto.randomUUID() : `demo-${Math.random().toString(36).slice(2)}`,
           status: table === 'wishlist' ? 'open' : r.status,
           created_at: new Date().toISOString(),
         }, r));

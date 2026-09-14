@@ -354,6 +354,33 @@ const BiteBookStorage = (() => {
     return !error;
   }
 
+  // ---------- inviting someone not yet on Bite Book ----------
+
+  async function createInvite({ entryId, phone, email }) {
+    const ownerId = await currentUserId();
+    if (!ownerId) return null;
+    const { data, error } = await supabaseClient
+      .from('invites')
+      .insert({
+        entry_id: entryId,
+        invited_by: ownerId,
+        invited_phone: phone || null,
+        invited_email: email || null,
+        channel: phone ? 'sms' : 'email',
+      })
+      .select('id')
+      .single();
+    return (error || !data) ? null : data.id;
+  }
+
+  async function listInvitesForEntry(entryId) {
+    const { data, error } = await supabaseClient
+      .from('invites')
+      .select('id, invited_phone, invited_email, channel, status')
+      .eq('entry_id', entryId);
+    return (error || !data) ? [] : data;
+  }
+
   // ---------- cross-user duplicate detection ----------
 
   async function getOtherEntrySignatures() {
@@ -621,6 +648,8 @@ const BiteBookStorage = (() => {
     getShareUserIds,
     shareEntry,
     unshareEntry,
+    createInvite,
+    listInvitesForEntry,
     getOtherEntrySignatures,
     getEntrySignature,
     isConnectedByShare,

@@ -16,24 +16,47 @@ function section(icon, label, innerHtml, editHref) {
   `;
 }
 
-function buildSharePanelHtml(directory, shareUserIds) {
+function buildInviteFormHtml(invites) {
+  const pendingHtml = (invites || []).map((inv) => {
+    const target = inv.invited_phone || inv.invited_email || '';
+    const via = inv.channel === 'sms' ? 'texted' : 'emailed';
+    const state = inv.status === 'claimed' ? '✅ joined' : `⏳ ${via} — waiting`;
+    return `<p class="field-sublabel invite-pending-row">${escapeHtmlView(target)} — ${state}</p>`;
+  }).join('');
+  const pickBtn = (typeof BiteBookInvite !== 'undefined' && BiteBookInvite.isContactPickerSupported())
+    ? `<button type="button" class="btn btn-back" id="invite-pick-contact-btn">📇 Pick from Contacts</button>`
+    : '';
+  return `
+    <div class="invite-someone-new" id="invite-new-wrap" style="margin-top: 16px;">
+      <p class="field-sublabel">Not on Bite Book yet?</p>
+      <div class="invite-row" style="display:flex; gap:8px; flex-wrap:wrap;">
+        <input type="text" id="invite-target" placeholder="Phone number or email">
+        ${pickBtn}
+        <button type="button" class="btn btn-back" id="invite-send-btn">Send Invite</button>
+      </div>
+      <p class="upload-status" id="invite-status"></p>
+      <div id="invite-pending-list">${pendingHtml}</div>
+    </div>
+  `;
+}
+
+function buildSharePanelHtml(directory, shareUserIds, invites) {
   const blocked = (typeof BiteBookRoles !== 'undefined')
     ? BiteBookRoles.blockedReason('share-entry') : null;
   if (blocked) {
     return `<p class="field-sublabel">${escapeHtmlView(blocked)}</p>`;
   }
-  if (!directory.length) {
-    return `<p class="field-sublabel">No one in your family or friends list yet — add them from your Profile page first.</p>`;
-  }
-  const chips = directory.map((p) => {
-    const label = p.name || 'Unnamed';
-    return `<button type="button" class="chip" aria-pressed="false" data-user-id="${escapeHtmlView(p.id)}">${p.avatar ? escapeHtmlView(p.avatar) + ' ' : '👤 '}${escapeHtmlView(label)}</button>`;
-  }).join('');
-  return `<div class="chip-grid" id="share-chip-grid">${chips}</div>`;
+  const chipsHtml = directory.length
+    ? `<div class="chip-grid" id="share-chip-grid">${directory.map((p) => {
+        const label = p.name || 'Unnamed';
+        return `<button type="button" class="chip" aria-pressed="false" data-user-id="${escapeHtmlView(p.id)}">${p.avatar ? escapeHtmlView(p.avatar) + ' ' : '👤 '}${escapeHtmlView(label)}</button>`;
+      }).join('')}</div>`
+    : `<p class="field-sublabel">No one in your family or friends list yet.</p>`;
+  return `${chipsHtml}${buildInviteFormHtml(invites)}`;
 }
 
 function buildStoryHtml(entry, ctx) {
-  const { isOwner, directory, shareUserIds, ownerName } = ctx;
+  const { isOwner, directory, shareUserIds, ownerName, invites } = ctx;
   const title = entry.food || 'Untitled entry';
   const mealLabel = mealTypeLabel(entry.mealType);
   const cuisLabel = cuisineLabel(entry.cuisine);
@@ -65,7 +88,7 @@ function buildStoryHtml(entry, ctx) {
     ? `
       <button type="button" class="toggle-link" id="share-toggle-link">👥 Share with...</button>
       <div class="field-group" id="share-wrap" style="display: none; margin-top: 14px;">
-        ${buildSharePanelHtml(directory, shareUserIds)}
+        ${buildSharePanelHtml(directory, shareUserIds, invites)}
         <p class="upload-status" id="share-status"></p>
       </div>
     `
@@ -208,9 +231,10 @@ document.addEventListener('bitebook:ready', async () => {
   const isOwner = entry.ownerId === myId;
   const directory = await BiteBookStorage.listDirectory();
   const shareUserIds = isOwner ? await BiteBookStorage.getShareUserIds(entry.id) : new Set();
+  const invites = isOwner ? await BiteBookStorage.listInvitesForEntry(entry.id) : [];
   const ownerName = isOwner ? null : (directory.find((p) => p.id === entry.ownerId) || {}).name;
 
-  container.innerHTML = buildStoryHtml(entry, { isOwner, directory, shareUserIds, ownerName });
+  container.innerHTML = buildStoryHtml(entry, { isOwner, directory, shareUserIds, ownerName, invites });
 
   document.getElementById('log-again-btn').addEventListener('click', async () => {
     const newId = await BiteBookStorage.duplicateForLogAgain(entry);
@@ -253,5 +277,56 @@ document.addEventListener('bitebook:ready', async () => {
         }
       });
     });
+
+    const inviteTargetInput = document.getElementById('invite-target');
+    const inviteSendBtn = document.getElementById('invite-send-btn');
+    const invitePickBtn = document.getElementById('invite-pick-contact-btn');
+    const inviteStatus = document.getElementById('invite-status');
+    const invitePendingList = document.getElementById('invite-pending-list');
+
+    if (invitePickBtn) {
+      invitePickBtn.addEventListener('click', async () => {
+        const contact = await BiteBookInvite.pickContact();
+        if (contact) {
+          inviteTargetInput.value = contact.tel || contact.email || '';
+        }
+      });
+    }
+
+    if (inviteSendBtn) {
+      inviteSendBtn.addEventListener('click', async () => {
+        const target = inviteTargetInput.value.trim();
+        if (!target) return;
+        const isEmail = target.includes('@');
+        const phone = isEmail ? null : target;
+        const email = isEmail ? target : null;
+
+        inviteSendBtn.disabled = true;
+        inviteStatus.textContent = '';
+
+        const inviteId = await BiteBookStorage.createInvite({ entryId: entry.id, phone, email });
+        if (!inviteId) {
+          inviteStatus.textContent = '⚠️ Something went wrong — try again.';
+          inviteSendBtn.disabled = false;
+          return;
+        }
+
+        const url = `${window.location.origin}/login.html?invite=${encodeURIComponent(inviteId)}`;
+        const message = BiteBookInvite.buildMessage({
+          senderName: BiteBookProfile.get().name,
+          food: entry.food,
+          url,
+        });
+        BiteBookInvite.send({ phone, email, message });
+
+        inviteTargetInput.value = '';
+        inviteSendBtn.disabled = false;
+        const via = phone ? 'texted' : 'emailed';
+        const row = document.createElement('p');
+        row.className = 'field-sublabel invite-pending-row';
+        row.textContent = `${target} — ⏳ ${via} — waiting`;
+        invitePendingList.appendChild(row);
+      });
+    }
   }
 });
