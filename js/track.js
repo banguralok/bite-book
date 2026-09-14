@@ -34,7 +34,8 @@ const BiteBookTrack = (() => {
     try {
       if (!sessionStorage.getItem('bb_session_logged')) {
         sessionStorage.setItem('bb_session_logged', '1');
-        event('session_start', { entry_page: currentPage() });
+        const platform = (typeof BiteBookPlatform !== 'undefined') ? BiteBookPlatform.current() : 'unknown';
+        event('session_start', { entry_page: currentPage(), platform });
       }
     } catch (err) {
       // Private browsing can refuse sessionStorage; the page_view below

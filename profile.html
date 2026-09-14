@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=6">
+<link rel="stylesheet" href="css/style.css?v=7">
 </head>
 <body>
 
@@ -59,7 +59,11 @@
         Set a password so you can sign in directly next time — no need to wait for an email link.
       </span>
       <div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
-        <input type="password" id="new-password" class="text-input" style="flex: 1; min-width: 180px;" placeholder="New password (8+ characters)" autocomplete="new-password">
+        <input type="password" id="new-password" class="text-input" style="flex: 1; min-width: 180px;" placeholder="New password (10+ characters)" autocomplete="new-password">
+      </div>
+      <p class="field-sublabel" id="new-password-strength-hint"></p>
+      <div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
+        <input type="password" id="new-password-confirm" class="text-input" style="flex: 1; min-width: 180px;" placeholder="Confirm new password" autocomplete="new-password">
         <button type="button" class="btn btn-back" id="set-password-btn">Set Password</button>
       </div>
       <p class="upload-status" id="password-status"></p>
@@ -158,12 +162,15 @@
 <script src="js/icons.js?v=2"></script>
 <script src="js/roles.js?v=1"></script>
 <script src="js/partials.js?v=5"></script>
+<script src="js/platform.js"></script>
 <script src="js/track.js?v=1"></script>
 <script src="js/storage.js?v=5"></script>
 <script src="js/labels.js?v=2"></script>
 <script src="js/profile.js?v=4"></script>
 <script src="js/geo.js?v=3"></script>
 <script src="js/search.js?v=1"></script>
-<script src="js/profile-page.js?v=2"></script>
+<script src="js/pw-policy.js"></script>
+<script src="js/pw-toggle.js"></script>
+<script src="js/profile-page.js?v=3"></script>
 </body>
 </html>

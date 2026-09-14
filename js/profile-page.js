@@ -36,8 +36,12 @@ document.addEventListener('bitebook:ready', () => {
   const savedToast = document.getElementById('saved-toast');
 
   const newPasswordInput = document.getElementById('new-password');
+  const newPasswordConfirmInput = document.getElementById('new-password-confirm');
   const setPasswordBtn = document.getElementById('set-password-btn');
   const passwordStatus = document.getElementById('password-status');
+  const newPasswordStrengthHint = document.getElementById('new-password-strength-hint');
+  BiteBookPwToggle.attach(newPasswordInput);
+  BiteBookPwToggle.attach(newPasswordConfirmInput);
 
   const familyListEl = document.getElementById('family-list');
   const addFamilyBtn = document.getElementById('add-family-btn');
@@ -65,11 +69,22 @@ document.addEventListener('bitebook:ready', () => {
     chip.addEventListener('click', () => selectAvatar(chip.dataset.value));
   });
 
+  newPasswordInput.addEventListener('input', () => {
+    const label = BiteBookPasswordPolicy.strengthLabel(newPasswordInput.value);
+    newPasswordStrengthHint.textContent = label ? `Strength: ${label}` : '';
+  });
+
   setPasswordBtn.addEventListener('click', async () => {
     const password = newPasswordInput.value;
     passwordStatus.classList.remove('error');
-    if (!password || password.length < 8) {
-      passwordStatus.textContent = 'Use at least 8 characters.';
+    const check = BiteBookPasswordPolicy.validate(password, BiteBookProfile.get().email);
+    if (!check.ok) {
+      passwordStatus.textContent = check.reason;
+      passwordStatus.classList.add('error');
+      return;
+    }
+    if (password !== newPasswordConfirmInput.value) {
+      passwordStatus.textContent = "Those two passwords don't match.";
       passwordStatus.classList.add('error');
       return;
     }
@@ -82,6 +97,7 @@ document.addEventListener('bitebook:ready', () => {
     } else {
       passwordStatus.textContent = '✅ Password set — you can use it next time you sign in.';
       newPasswordInput.value = '';
+      newPasswordConfirmInput.value = '';
     }
   });
 
@@ -266,9 +282,11 @@ document.addEventListener('bitebook:ready', () => {
     if (ok) {
       savedToast.classList.add('visible');
       setTimeout(() => savedToast.classList.remove('visible'), 2000);
-      const wasFirstTime = new URLSearchParams(window.location.search).get('welcome') === '1';
+      const params = new URLSearchParams(window.location.search);
+      const wasFirstTime = params.get('welcome') === '1';
       if (wasFirstTime) {
-        setTimeout(() => { window.location.href = 'entries.html'; }, 900);
+        const next = params.get('next') || 'entries.html';
+        setTimeout(() => { window.location.href = next; }, 900);
       }
     } else {
       savedToast.textContent = "⚠️ Couldn't save — check your connection and try again.";
