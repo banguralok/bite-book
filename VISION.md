@@ -36,6 +36,8 @@ Not entry count. Not feature count. The real test: does someone open Bite Book o
 
 A shared, growing archive that gets more valuable the longer a family uses it — not because of any one feature, but because of the accumulated memory itself. AI's job over time is to make that archive easier to *revisit* (surfacing the right memory at the right moment) at least as much as it makes it easier to *create*. The moat isn't the AI or the tech — it's the family's own accumulated food history, which nothing else has.
 
+**From a private web app to a real published app.** Bite Book runs today as a PWA plus an in-progress native Android wrapper (Capacitor), sideloaded to a small circle the owner knows personally — see `ROADMAP.md`'s "In progress" section. That's a deliberate, cheap way to get real native capability (contacts, SMS handoff, eventually push) without the cost or scrutiny of a public listing before there's anything worth listing. The actual destination is a real app on the App Store and Play Store — which is also the moment the deferred legal/compliance and naming work (both tracked in `ROADMAP.md`) stops being optional and becomes a gate. Nothing here is a committed timeline; it's the direction the sideload work is deliberately pointed at.
+
 ---
 
 *Last substantively revised: 2026-09-03. Revise this alongside any major pivot in direction — it should stay short enough to actually re-read.*
