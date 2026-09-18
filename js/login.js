@@ -111,6 +111,8 @@ document.addEventListener('DOMContentLoaded', () => {
   if (inviteId) {
     setMode('signup');
     helpEl.textContent = "👋 You've been invited to see a food memory on Bite Book! Create an account to view it.";
+  } else if (new URLSearchParams(window.location.search).get('reason') === 'idle') {
+    showStatus("You were signed out after 15 minutes of inactivity. Sign back in to pick up where you left off.", false);
   }
 
   async function signInWithPassword() {

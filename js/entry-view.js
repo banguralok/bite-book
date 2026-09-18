@@ -78,6 +78,7 @@ function buildStoryHtml(entry, ctx) {
         </div>
       </div>
     </div>
+    ${heroPhoto && heroPhoto.caption ? `<p class="story-photo-caption">${escapeHtmlView(heroPhoto.caption)}</p>` : ''}
   `;
 
   const sharedByHtml = !isOwner
@@ -99,6 +100,7 @@ function buildStoryHtml(entry, ctx) {
       ${isOwner ? `<a href="entry.html?id=${encodeURIComponent(entry.id)}" class="btn btn-back">${BiteBookIcons.svg('pencil')} Edit</a>` : ''}
       <button type="button" class="btn btn-back" id="log-again-btn">${BiteBookIcons.svg('repeat')} Log This Again</button>
       <button type="button" class="btn btn-back" id="share-btn">${BiteBookIcons.svg('share')} Share</button>
+      <button type="button" class="btn btn-back" id="print-btn">🖨️ Print</button>
     </div>
     ${sharedByHtml}
     ${sharePanelHtml}
@@ -188,7 +190,12 @@ function buildStoryHtml(entry, ctx) {
   }
 
   if (photos.length > 1) {
-    const gallery = photos.slice(1).map((p) => `<img src="${p.url}" alt="">`).join('');
+    const gallery = photos.slice(1).map((p) => `
+      <div class="story-gallery-item">
+        <img src="${p.url}" alt="">
+        ${p.caption ? `<p class="story-photo-caption">${escapeHtmlView(p.caption)}</p>` : ''}
+      </div>
+    `).join('');
     sections.push(section('📸', 'More Photos', `<div class="story-gallery">${gallery}</div>`, stepHref('entry-photos.html')));
   }
 
@@ -240,6 +247,8 @@ document.addEventListener('bitebook:ready', async () => {
     const newId = await BiteBookStorage.duplicateForLogAgain(entry);
     window.location.href = `entry.html?id=${encodeURIComponent(newId)}`;
   });
+
+  document.getElementById('print-btn').addEventListener('click', () => window.print());
 
   const shareBtn = document.getElementById('share-btn');
   shareBtn.addEventListener('click', () => {

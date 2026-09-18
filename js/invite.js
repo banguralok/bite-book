@@ -5,10 +5,9 @@
 // message and hands off to the recipient's own Messages/Mail app via
 // sms:/mailto: links, the same "hand off to the OS, don't build it
 // ourselves" idea already used for the entry share button in
-// js/share-card.js. The Contact Picker API (Chrome/Android only) is offered
-// where the browser actually supports it; everywhere else the caller simply
-// doesn't render the button, same feature-detect pattern as voice capture
-// in Smart Entry.
+// js/share-card.js. Contact picking itself lives in js/contacts.js (shared
+// with tagging a companion from your phone's contacts on entry-who.html) —
+// this just asks for one.
 const BiteBookInvite = (() => {
   function isIOS() {
     return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
@@ -21,24 +20,13 @@ const BiteBookInvite = (() => {
   }
 
   function isContactPickerSupported() {
-    return 'contacts' in navigator && 'ContactsManager' in window;
+    return typeof BiteBookContacts !== 'undefined' && BiteBookContacts.isSupported();
   }
 
-  // Never throws — the native picker can be cancelled or unsupported, and
-  // either case should just mean "fall back to typing it in", not an error.
   async function pickContact() {
     if (!isContactPickerSupported()) return null;
-    try {
-      const [contact] = await navigator.contacts.select(['name', 'tel', 'email'], { multiple: false });
-      if (!contact) return null;
-      return {
-        name: (contact.name && contact.name[0]) || '',
-        tel: (contact.tel && contact.tel[0]) || '',
-        email: (contact.email && contact.email[0]) || '',
-      };
-    } catch (e) {
-      return null;
-    }
+    const [contact] = await BiteBookContacts.pick({ multiple: false });
+    return contact || null;
   }
 
   function send({ phone, email, message }) {

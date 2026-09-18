@@ -221,8 +221,9 @@ document.addEventListener('bitebook:ready', async () => {
   async function renderIdeas() {
     if (typeof BiteBookNudges === 'undefined') return;
     const myId = await BiteBookStorage.getCurrentUserId();
-    const entries = (await BiteBookStorage.listEntries()).filter((e) => e.ownerId === myId);
-    const ideas = BiteBookNudges.build(entries, wishes, BiteBookProfile.get());
+    const [allEntries, trips] = await Promise.all([BiteBookStorage.listEntries(), BiteBookStorage.listTrips()]);
+    const entries = allEntries.filter((e) => e.ownerId === myId);
+    const ideas = BiteBookNudges.build(entries, wishes, BiteBookProfile.get(), trips);
     BiteBookNudges.render('wish-ideas', ideas, async (wish, btn) => {
       btn.disabled = true;
       const entryId = await BiteBookStorage.logWish(wish);

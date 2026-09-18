@@ -33,7 +33,7 @@ async function currentUserId() {
   return data.session ? data.session.user.id : null;
 }
 
-async function signOut() {
+async function signOut(redirectTo) {
   await supabaseClient.auth.signOut();
-  window.location.href = 'login.html';
+  window.location.href = redirectTo || 'index.html';
 }

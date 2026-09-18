@@ -96,11 +96,12 @@ const BiteBookStorage = (() => {
   async function preparePhotosForSave(entryId, photos) {
     const results = [];
     for (const photo of photos || []) {
+      const caption = photo.caption || null;
       if (photo.path) {
-        results.push({ path: photo.path, width: photo.width, height: photo.height, size: photo.size });
+        results.push({ path: photo.path, width: photo.width, height: photo.height, size: photo.size, caption });
       } else if (photo.dataUrl) {
         const path = await uploadMedia(entryId, photo.dataUrl, 'photo.jpg');
-        results.push({ path, width: photo.width, height: photo.height, size: photo.size });
+        results.push({ path, width: photo.width, height: photo.height, size: photo.size, caption });
       }
     }
     return results;
@@ -471,35 +472,53 @@ const BiteBookStorage = (() => {
 
   // ---------- trips ----------
 
+  function mapTripRow(row) {
+    return {
+      id: row.id,
+      name: row.name,
+      createdAt: row.created_at,
+      startsOn: row.starts_on || null,
+      endsOn: row.ends_on || null,
+      city: row.city || null,
+    };
+  }
+
   async function listTrips() {
     const userId = await currentUserId();
     if (!userId) return [];
     const { data, error } = await supabaseClient
       .from('trips')
-      .select('id, name, created_at')
+      .select('id, name, created_at, starts_on, ends_on, city')
       .eq('owner_id', userId)
       .order('created_at', { ascending: false });
-    return (error || !data) ? [] : data.map((row) => ({ id: row.id, name: row.name, createdAt: row.created_at }));
+    return (error || !data) ? [] : data.map(mapTripRow);
   }
 
   async function getTrip(id) {
     const { data, error } = await supabaseClient
       .from('trips')
-      .select('id, name, created_at')
+      .select('id, name, created_at, starts_on, ends_on, city')
       .eq('id', id)
       .maybeSingle();
-    return (error || !data) ? null : { id: data.id, name: data.name, createdAt: data.created_at };
+    return (error || !data) ? null : mapTripRow(data);
   }
 
-  async function createTrip(name) {
+  async function createTrip(name, opts) {
     const userId = await currentUserId();
     if (!userId) return null;
     const { data, error } = await supabaseClient
       .from('trips')
-      .insert({ id: newId(), owner_id: userId, name })
-      .select('id, name, created_at')
+      .insert({
+        id: newId(),
+        owner_id: userId,
+        name,
+        starts_on: (opts && opts.startsOn) || null,
+        ends_on: (opts && opts.endsOn) || null,
+        city: (opts && opts.city) || null,
+      })
+      .select('id, name, created_at, starts_on, ends_on, city')
       .single();
-    return (error || !data) ? null : { id: data.id, name: data.name, createdAt: data.created_at };
+    return (error || !data) ? null : mapTripRow(data);
   }
 
   async function deleteTrip(id) {
@@ -512,6 +531,43 @@ const BiteBookStorage = (() => {
       .from('entries')
       .update({ trip_id: tripId })
       .eq('id', entryId);
+    return !error;
+  }
+
+  // ---------- place notes ----------
+  // A running note about a place ("always get the garlic naan"), not tied
+  // to any one meal — see supabase/migrations/014_place_notes_and_trip_dates.sql.
+
+  async function getPlaceNote(placeName) {
+    const userId = await currentUserId();
+    if (!userId || !placeName) return null;
+    const { data, error } = await supabaseClient
+      .from('place_notes')
+      .select('note, updated_at')
+      .eq('owner_id', userId)
+      .eq('place_name', placeName)
+      .maybeSingle();
+    return (error || !data) ? null : { note: data.note, updatedAt: data.updated_at };
+  }
+
+  async function savePlaceNote(placeName, note) {
+    const userId = await currentUserId();
+    if (!userId || !placeName) return false;
+    const trimmed = (note || '').trim();
+    if (!trimmed) {
+      const { error } = await supabaseClient
+        .from('place_notes')
+        .delete()
+        .eq('owner_id', userId)
+        .eq('place_name', placeName);
+      return !error;
+    }
+    const { error } = await supabaseClient
+      .from('place_notes')
+      .upsert(
+        { owner_id: userId, place_name: placeName, note: trimmed, updated_at: new Date().toISOString() },
+        { onConflict: 'owner_id,place_name' }
+      );
     return !error;
   }
 
@@ -663,5 +719,7 @@ const BiteBookStorage = (() => {
     createTrip,
     deleteTrip,
     assignEntryToTrip,
+    getPlaceNote,
+    savePlaceNote,
   };
 })();

@@ -30,6 +30,19 @@
 
     <div id="dedupe-groups"></div>
   </div>
+
+  <div class="wizard-card" style="margin-top: 24px;" id="people">
+    <p class="wizard-kicker">tidy up</p>
+    <h1>🧑 Clean Up People</h1>
+    <p class="wizard-help">
+      The same "who was with you" name typed differently over time — Dave, David — fragments search and stats without you noticing. Nothing changes until you approve each merge.
+    </p>
+
+    <button type="button" class="btn btn-back" id="people-ai-check-btn">🔍 Also Check for Trickier Matches (AI)</button>
+    <p class="upload-status" id="people-dedupe-status"></p>
+
+    <div id="people-dedupe-groups"></div>
+  </div>
 </main>
 
 <footer class="footer" id="site-footer"></footer>
@@ -39,6 +52,8 @@
 <script src="js/vendor/capacitor-splash-screen.js"></script>
 <script src="js/splash.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/idle-timeout.js"></script>
+<script src="js/engagement.js"></script>
 <script src="js/icons.js?v=2"></script>
 <script src="js/roles.js?v=1"></script>
 <script src="js/partials.js?v=5"></script>

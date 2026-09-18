@@ -944,6 +944,29 @@ section h2 {
 .photo-tile-add:hover { border-color: var(--orange); color: var(--orange-dark); }
 .photo-tile-add .plus-icon { font-size: 1.6rem; }
 
+.photo-tile-wrap { display: flex; flex-direction: column; gap: 6px; }
+
+.photo-caption-input {
+  font-size: 0.75rem;
+  padding: 5px 8px;
+  border: 1px solid var(--cream-2);
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--brown);
+  width: 100%;
+  box-sizing: border-box;
+  font-family: 'Nunito', sans-serif;
+}
+
+.photo-caption-input:focus { outline: 2px solid var(--orange); outline-offset: 1px; }
+
+.story-photo-caption {
+  font-size: 0.85rem;
+  color: var(--brown-soft);
+  font-style: italic;
+  margin-top: 6px;
+}
+
 .video-list {
   display: flex;
   flex-direction: column;
@@ -1456,6 +1479,8 @@ section h2 {
   }
   .brand { font-size: 1.15rem; white-space: nowrap; }
   .nav-links {
+    flex-wrap: wrap;
+    row-gap: 10px;
     gap: 14px;
     font-size: 0.85rem;
     width: 100%;
@@ -3002,3 +3027,27 @@ a.cal-cell:hover, a.cal-cell:focus-visible {
 
 a.year-cell:hover, a.year-cell:focus-visible,
 .year-cell:focus-visible { outline: 2px solid var(--brown); outline-offset: 1px; }
+
+/* ---------- Print a single entry (js/entry-view.js "Print" button) ---------- */
+/* Everything that only makes sense on a screen — nav, footer, buttons, the
+   sticky header, edit pencils, the "shared by" note — is hidden; what's left
+   is just the memory itself, one page, ready to be kept as a physical copy. */
+@media print {
+  body * { visibility: hidden; }
+  .story-page, .story-page * { visibility: visible; }
+  .story-page {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    max-width: none;
+    padding: 0.5in;
+    margin: 0;
+  }
+  .nav, .footer, .story-actions, .story-section-edit,
+  .wizard-link-start, .shared-by-note, #site-header, #site-footer {
+    display: none !important;
+  }
+  .story-hero { box-shadow: none; break-inside: avoid; }
+  .story-section { break-inside: avoid; }
+}

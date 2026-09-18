@@ -152,6 +152,38 @@ const BiteBookNudges = (() => {
     })];
   }
 
+  // A trip already has a real date and a real place — the strongest kind of
+  // "why now" there is, stronger even than an occasion, since a trip you
+  // booked is a plan, not just a date on the calendar. Only fires once a
+  // trip actually carries a future start date and a city (see
+  // supabase/migrations/014_place_notes_and_trip_dates.sql) — most trips
+  // logged so far are past ones with neither, so this simply says nothing
+  // until a trip is created that way.
+  function tripRule(wishes, trips) {
+    const now = today();
+    const upcoming = (trips || []).filter((t) => t.startsOn && t.startsOn >= now && t.city);
+    if (!upcoming.length || !wishes.length) return [];
+
+    const ideas = [];
+    upcoming.forEach((trip) => {
+      const days = daysBetween(now, trip.startsOn);
+      wishes
+        .filter((w) => w.city && w.city.toLowerCase() === trip.city.toLowerCase())
+        .forEach((wish) => {
+          ideas.push({
+            weight: 95,
+            wish,
+            headline: wish.title,
+            reason: wish.recommendedBy
+              ? `${trip.name} is coming up ${whenLabel(days)} — ${wish.recommendedBy} recommended this in ${trip.city}.`
+              : `${trip.name} is coming up ${whenLabel(days)} — this is on your list for ${trip.city}.`,
+            tag: 'A trip is coming up',
+          });
+        });
+    });
+    return ideas;
+  }
+
   function staleRule(wishes) {
     const now = today();
     return wishes
@@ -174,7 +206,7 @@ const BiteBookNudges = (() => {
 
   // ---------- putting them together ----------
 
-  function build(entries, wishes, profile) {
+  function build(entries, wishes, profile, trips) {
     const open = (wishes || []).filter((w) => w.status === 'open');
     const mine = (entries || []).filter((e) => e.status === 'complete' && e.ateOn);
     if (!open.length && !mine.length) return [];
@@ -182,6 +214,7 @@ const BiteBookNudges = (() => {
     const occasions = upcomingOccasions(profile);
     const ideas = []
       .concat(occasionRule(open, occasions))
+      .concat(tripRule(open, trips))
       .concat(cityRule(open, mine))
       .concat(rhythmRule(open, mine))
       .concat(staleRule(open));

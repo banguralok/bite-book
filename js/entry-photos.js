@@ -53,21 +53,31 @@ document.addEventListener('bitebook:ready', async () => {
   }
 
   function renderPhotos() {
-    photoGrid.querySelectorAll('.photo-tile').forEach((el) => el.remove());
+    photoGrid.querySelectorAll('.photo-tile-wrap').forEach((el) => el.remove());
     photos.forEach((photo, index) => {
-      const tile = document.createElement('div');
-      tile.className = 'photo-tile';
-      tile.innerHTML = `
-        <img src="${photo.url || photo.dataUrl}" alt="">
-        <button type="button" class="photo-tile-remove" data-index="${index}" aria-label="Remove this photo">✕</button>
+      const wrap = document.createElement('div');
+      wrap.className = 'photo-tile-wrap';
+      wrap.innerHTML = `
+        <div class="photo-tile">
+          <img src="${photo.url || photo.dataUrl}" alt="">
+          <button type="button" class="photo-tile-remove" data-index="${index}" aria-label="Remove this photo">✕</button>
+        </div>
+        <input type="text" class="photo-caption-input" data-caption-index="${index}" placeholder="Add a caption..." value="${escapeHtmlLocal(photo.caption || '')}">
       `;
-      photoGrid.insertBefore(tile, photoAddTile);
+      photoGrid.insertBefore(wrap, photoAddTile);
     });
     photoGrid.querySelectorAll('.photo-tile-remove').forEach((btn) => {
       btn.addEventListener('click', async () => {
         photos.splice(Number(btn.dataset.index), 1);
         renderPhotos();
         await saveNow();
+      });
+    });
+    photoGrid.querySelectorAll('.photo-caption-input').forEach((input) => {
+      input.addEventListener('change', async () => {
+        photos[Number(input.dataset.captionIndex)].caption = input.value.trim() || null;
+        const ok = await saveNow();
+        flashAutosaveBadge(autosaveHint, ok);
       });
     });
     photoAddTile.style.display = photos.length >= MAX_PHOTOS ? 'none' : 'flex';

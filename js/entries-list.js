@@ -129,6 +129,55 @@ function renderDedupeBanner(entries) {
   });
 }
 
+const PEOPLE_DEDUPE_DISMISSED_KEY = 'bitebook:peopleDedupeDismissed';
+
+function getDismissedPeopleDedupeKeys() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(PEOPLE_DEDUPE_DISMISSED_KEY) || '[]'));
+  } catch (e) {
+    return new Set();
+  }
+}
+
+function dismissPeopleDedupeGroup(key) {
+  const dismissed = getDismissedPeopleDedupeKeys();
+  dismissed.add(key);
+  localStorage.setItem(PEOPLE_DEDUPE_DISMISSED_KEY, JSON.stringify(Array.from(dismissed)));
+}
+
+// Same free, instant pattern as renderDedupeBanner, run against the names
+// typed into entry.companionNames instead of place names — "Dave" and
+// "David" for the same person fragment search and stats just as quietly as
+// two spellings of the same restaurant.
+function renderPeopleDedupeBanner(entries) {
+  const banner = document.getElementById('people-dedupe-banner');
+  if (!banner) return;
+
+  const names = entries.flatMap((e) => splitCompanionNames(e.companionNames));
+  const groups = findLikelyDuplicateCompanionNames(names);
+  const dismissed = getDismissedPeopleDedupeKeys();
+  const activeGroups = groups.filter((g) => !dismissed.has(dedupeGroupKey(g)));
+
+  if (activeGroups.length === 0) {
+    banner.style.display = 'none';
+    return;
+  }
+
+  banner.style.display = 'flex';
+  banner.innerHTML = `
+    <span>We found ${activeGroups.length} name${activeGroups.length === 1 ? '' : 's'} that might be the same person.</span>
+    <div class="dedupe-banner-actions">
+      <a href="dedupe.html#people" class="link-pill">Review →</a>
+      <button type="button" class="dedupe-banner-dismiss" id="people-dedupe-banner-dismiss" aria-label="Dismiss">✕</button>
+    </div>
+  `;
+
+  document.getElementById('people-dedupe-banner-dismiss').addEventListener('click', () => {
+    activeGroups.forEach((g) => dismissPeopleDedupeGroup(dedupeGroupKey(g)));
+    banner.style.display = 'none';
+  });
+}
+
 document.addEventListener('bitebook:ready', async () => {
   const listEl = document.getElementById('entries-list');
   const emptyEl = document.getElementById('empty-state');
@@ -144,6 +193,20 @@ document.addEventListener('bitebook:ready', async () => {
   const undoToastBtn = document.getElementById('undo-toast-btn');
   const smartSearchBtn = document.getElementById('smart-search-btn');
   const smartSearchStatus = document.getElementById('smart-search-status');
+  const surpriseMeBtn = document.getElementById('surprise-me-btn');
+
+  // A different kind of "open it" than every other entry point on this page
+  // — no search, no filter, no picking. Distinct from On This Day (a date
+  // match): this is any past entry, any day, the point being to remember
+  // something you weren't already looking for.
+  if (surpriseMeBtn) {
+    surpriseMeBtn.addEventListener('click', () => {
+      const candidates = allEntriesCache.filter((e) => e.status === 'complete');
+      if (candidates.length === 0) return;
+      const pick = candidates[Math.floor(Math.random() * candidates.length)];
+      window.location.href = `entry-view.html?id=${encodeURIComponent(pick.id)}`;
+    });
+  }
   const smartSearchActiveNote = document.getElementById('smart-search-active-note');
 
   let statusFilter = 'all';
@@ -179,6 +242,7 @@ document.addEventListener('bitebook:ready', async () => {
     allEntriesCache = await BiteBookStorage.listEntries();
     renderOnThisDay(allEntriesCache);
     renderDedupeBanner(allEntriesCache);
+    renderPeopleDedupeBanner(allEntriesCache);
 
     // Streaks and occasion reminders are about YOUR own logging, so entries
     // someone else shared with you are deliberately left out of both.

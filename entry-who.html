@@ -63,6 +63,7 @@
 
     <div class="wizard-section" id="section-names">
       <button type="button" class="toggle-link" id="add-names-link">✏️ Name Them</button>
+      <button type="button" class="toggle-link" id="pick-contacts-link" style="display: none; margin-left: 14px;">📇 Pick from Contacts</button>
       <div class="field-group" id="names-wrap" style="display: none; margin-top: 14px;">
         <input
           type="text"
@@ -72,6 +73,10 @@
           autocomplete="off"
         >
         <span class="field-sublabel" style="margin-top: 10px;">Totally optional — just nice to remember later.</span>
+      </div>
+      <div class="field-group" id="tag-invite-wrap" style="display: none; margin-top: 14px;">
+        <span class="field-sublabel" id="tag-invite-label"></span>
+        <div id="tag-invite-list" style="margin-top: 8px; display: flex; flex-direction: column; gap: 8px;"></div>
       </div>
     </div>
 
@@ -98,6 +103,8 @@
 <script src="js/vendor/capacitor-splash-screen.js"></script>
 <script src="js/splash.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/idle-timeout.js"></script>
+<script src="js/engagement.js"></script>
 <script src="js/icons.js?v=2"></script>
 <script src="js/roles.js?v=1"></script>
 <script src="js/partials.js?v=5"></script>
@@ -109,6 +116,8 @@
 <script src="js/labels.js?v=2"></script>
 <script src="js/step-nav.js"></script>
 <script src="js/search.js?v=1"></script>
+<script src="js/contacts.js"></script>
+<script src="js/invite.js?v=1"></script>
 <script src="js/entry-who.js"></script>
 </body>
 </html>

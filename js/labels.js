@@ -144,6 +144,103 @@ function findLikelyDuplicatePlaceNames(placeNames) {
   return groups;
 }
 
+// Same free, instant heuristic as findLikelyDuplicatePlaceNames, applied to
+// the free-text names in entry.companionNames ("Mom, Dave" typed differently
+// over time as "Mom, David"). No noise-word list here — people's names don't
+// carry a "restaurant"/"cafe" suffix to strip.
+function normalizeCompanionName(name) {
+  return (name || '').toLowerCase().trim().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+// entry.companionNames is one free-text field ("Mom, Dad, and Priya") —
+// split it into individual names for comparison and for the merge step,
+// which must replace one name inside that list without touching the rest.
+function splitCompanionNames(namesStr) {
+  return (namesStr || '')
+    .split(/,|\band\b|&/i)
+    .map((n) => n.trim())
+    .filter(Boolean);
+}
+
+function findLikelyDuplicateCompanionNames(names) {
+  const unique = Array.from(new Set((names || []).filter(Boolean)));
+  const normalized = unique
+    .map((name) => ({ name, norm: normalizeCompanionName(name) }))
+    .filter((p) => p.norm);
+
+  const groups = [];
+  const used = new Set();
+
+  for (let i = 0; i < normalized.length; i++) {
+    if (used.has(normalized[i].name)) continue;
+    const group = [normalized[i].name];
+    used.add(normalized[i].name);
+    for (let j = i + 1; j < normalized.length; j++) {
+      if (used.has(normalized[j].name)) continue;
+      const a = normalized[i].norm;
+      const b = normalized[j].norm;
+      const isMatch = a === b || (a.length >= 3 && b.includes(a)) || (b.length >= 3 && a.includes(b));
+      if (isMatch) {
+        group.push(normalized[j].name);
+        used.add(normalized[j].name);
+      }
+    }
+    if (group.length > 1) {
+      const suggestedName = [...group].sort((x, y) => y.length - x.length)[0];
+      groups.push({ names: group, suggestedName });
+    }
+  }
+
+  return groups;
+}
+
+// Replaces whichever of `oldNames` appears as its own token inside a
+// companionNames string with `newName`, leaving every other name in the
+// list untouched — unlike a place name, this field is a list, not a single
+// value, so a merge can't just overwrite the whole thing.
+function replaceCompanionNameToken(namesStr, oldNames, newName) {
+  const oldLower = new Set(oldNames.map((n) => n.toLowerCase()));
+  const tokens = splitCompanionNames(namesStr).map((n) => (oldLower.has(n.toLowerCase()) ? newName : n));
+  return Array.from(new Set(tokens)).join(', ');
+}
+
+// Shared with js/ask.js — turning a described meal into a draft entry is the
+// same job whether the description came from Smart Entry's text box or a
+// typed chat message, so the pure mapping helpers (no page-specific
+// capturedPlace/photo state) live here once instead of twice.
+function matchFamilyIds(mentionedFamily, familyMembers) {
+  if (!mentionedFamily || !mentionedFamily.length) return [];
+  const ids = new Set();
+  mentionedFamily.forEach((mention) => {
+    const needle = (mention || '').trim().toLowerCase();
+    if (!needle) return;
+    const match = familyMembers.find((m) => {
+      const name = (m.name || '').toLowerCase();
+      const rel = (m.relationship || '').toLowerCase();
+      return (name && (name === needle || needle.includes(name) || name.includes(needle)))
+        || (rel && (rel === needle || needle.includes(rel) || rel.includes(needle)));
+    });
+    if (match) ids.add(match.id);
+  });
+  return Array.from(ids);
+}
+
+function resolveOrOther(value, otherValue) {
+  if (!value) return null;
+  if (value === 'other') return otherValue ? otherValue.trim() : null;
+  return value;
+}
+
+function clampRating(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  return Math.min(5, Math.max(1, Math.round(n)));
+}
+
+function isValidDateStr(value) {
+  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
 function isSafeUrl(url) {
   return typeof url === 'string' && /^https?:\/\//i.test(url.trim());
 }

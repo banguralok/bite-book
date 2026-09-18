@@ -53,6 +53,19 @@
       <span class="geo-status" id="geo-status"></span>
     </div>
 
+    <div class="field-group" id="place-history-wrap" style="display: none; margin-top: 14px;">
+      <div id="place-visit-note" style="display: none;"></div>
+      <div id="place-notes-section" style="margin-top: 10px; display: none;">
+        <label class="field-label" style="font-size: 0.85rem;">📌 Notes about this place</label>
+        <p class="field-sublabel" id="place-note-display" style="display: none;"></p>
+        <textarea id="place-note-input" class="text-input" rows="2" placeholder="e.g. always get the garlic naan, cash only..." style="margin-top: 6px; display: none;"></textarea>
+        <div style="margin-top: 6px; display: flex; gap: 8px;">
+          <button type="button" class="toggle-link" id="place-note-edit-link">✏️ Add a note</button>
+          <button type="button" class="btn btn-back" id="place-note-save-btn" style="display: none;">Save Note</button>
+        </div>
+      </div>
+    </div>
+
     <button type="button" class="toggle-link" id="add-address-link">✏️ Add a more exact address</button>
     <div class="field-group" id="address-wrap" style="display: none; margin-top: 14px;">
       <input
@@ -110,6 +123,8 @@
 <script src="js/vendor/capacitor-splash-screen.js"></script>
 <script src="js/splash.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/idle-timeout.js"></script>
+<script src="js/engagement.js"></script>
 <script src="js/icons.js?v=2"></script>
 <script src="js/roles.js?v=1"></script>
 <script src="js/partials.js?v=5"></script>

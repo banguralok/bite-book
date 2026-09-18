@@ -137,38 +137,8 @@ document.addEventListener('bitebook:ready', () => {
     }
   });
 
-  function matchFamilyIds(mentionedFamily, familyMembers) {
-    if (!mentionedFamily || !mentionedFamily.length) return [];
-    const ids = new Set();
-    mentionedFamily.forEach((mention) => {
-      const needle = (mention || '').trim().toLowerCase();
-      if (!needle) return;
-      const match = familyMembers.find((m) => {
-        const name = (m.name || '').toLowerCase();
-        const rel = (m.relationship || '').toLowerCase();
-        return (name && (name === needle || needle.includes(name) || name.includes(needle)))
-          || (rel && (rel === needle || needle.includes(rel) || rel.includes(needle)));
-      });
-      if (match) ids.add(match.id);
-    });
-    return Array.from(ids);
-  }
-
-  function resolveOrOther(value, otherValue) {
-    if (!value) return null;
-    if (value === 'other') return otherValue ? otherValue.trim() : null;
-    return value;
-  }
-
-  function clampRating(value) {
-    const n = Number(value);
-    if (!Number.isFinite(n)) return null;
-    return Math.min(5, Math.max(1, Math.round(n)));
-  }
-
-  function isValidDateStr(value) {
-    return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
-  }
+  // matchFamilyIds/resolveOrOther/clampRating/isValidDateStr now live in
+  // js/labels.js, shared with js/ask.js's own AI-result-to-draft-entry path.
 
   function buildEntryFromResult(result, rawText, profile, attachedPhoto) {
     const familyMembers = (profile && profile.familyMembers) || [];

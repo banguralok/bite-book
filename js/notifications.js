@@ -44,6 +44,24 @@ document.addEventListener('bitebook:ready', async () => {
       continue;
     }
 
+    const NUDGE_ICONS = { nudge_new_user: '📖', nudge_week: '🍽️', nudge_month: '💭' };
+    if (NUDGE_ICONS[n.type]) {
+      card.innerHTML = `
+        <div>${NUDGE_ICONS[n.type]} ${escapeHtmlNotif(n.message)}</div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <a href="smart-entry.html" class="btn btn-primary">✨ New Entry</a>
+          <button type="button" class="btn btn-back" data-dismiss>Not now</button>
+        </div>
+      `;
+      card.querySelector('[data-dismiss]').addEventListener('click', async () => {
+        await BiteBookStorage.updateNotificationStatus(n.id, 'dismissed');
+        card.remove();
+        maybeShowEmpty();
+      });
+      listEl.appendChild(card);
+      continue;
+    }
+
     const mine = await BiteBookStorage.getEntry(n.entryId);
     const theirSig = await BiteBookStorage.getEntrySignature(n.otherEntryId);
     if (!mine || !theirSig) continue; // resolved already elsewhere

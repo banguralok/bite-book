@@ -6,8 +6,12 @@ document.addEventListener('bitebook:ready', async () => {
   const familyPickerChipsEl = document.getElementById('family-picker-chips');
   const namesSection = document.getElementById('section-names');
   const addNamesLink = document.getElementById('add-names-link');
+  const pickContactsLink = document.getElementById('pick-contacts-link');
   const namesWrap = document.getElementById('names-wrap');
   const companionNamesInput = document.getElementById('companion-names');
+  const tagInviteWrap = document.getElementById('tag-invite-wrap');
+  const tagInviteLabel = document.getElementById('tag-invite-label');
+  const tagInviteList = document.getElementById('tag-invite-list');
   const backBtn = document.getElementById('back-btn');
   const continueBtn = document.getElementById('continue-btn');
   const savedToast = document.getElementById('saved-toast');
@@ -19,6 +23,7 @@ document.addEventListener('bitebook:ready', async () => {
   let hasInteracted = false;
   const selectedTypes = new Set();
   const selectedFamilyIds = new Set();
+  const offeredInviteTargets = new Set(); // dedupe by phone/email across repeated contact picks
 
   const profile = BiteBookProfile.get();
   const familyMembers = (profile && profile.familyMembers) || [];
@@ -152,6 +157,79 @@ document.addEventListener('bitebook:ready', async () => {
     namesWrap.style.display = 'block';
     companionNamesInput.focus();
   });
+
+  // Tagging someone from your contacts is a separate question from telling
+  // them about it — picking a name off your phone is not consent to send
+  // that person anything. So this only ever offers a "let them know" row
+  // per contact, never fires an invite on its own; sending still needs its
+  // own explicit tap, same as the invite panel on entry-view.html.
+  function renderInviteOffer(contact) {
+    const target = contact.tel || contact.email;
+    if (!target || offeredInviteTargets.has(target)) return;
+    offeredInviteTargets.add(target);
+
+    tagInviteWrap.style.display = 'block';
+    tagInviteLabel.textContent = 'Let them know about this entry?';
+
+    const row = document.createElement('div');
+    row.className = 'invite-row';
+    row.style.cssText = 'display:flex; align-items:center; gap:10px; flex-wrap:wrap;';
+    row.innerHTML = `
+      <span>${contact.name || target}</span>
+      <button type="button" class="btn btn-back" data-send>✉️ Let Them Know</button>
+      <button type="button" class="btn btn-back" data-skip>Not Now</button>
+    `;
+    tagInviteList.appendChild(row);
+
+    row.querySelector('[data-skip]').addEventListener('click', () => row.remove());
+
+    row.querySelector('[data-send]').addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      const inviteId = await BiteBookStorage.createInvite({ entryId, phone: contact.tel || null, email: contact.tel ? null : contact.email });
+      if (!inviteId) {
+        row.innerHTML = `<span>${contact.name || target}</span> <span class="field-sublabel">⚠️ Something went wrong — try again from the entry later.</span>`;
+        return;
+      }
+      const url = `${window.location.origin}/login.html?invite=${encodeURIComponent(inviteId)}`;
+      const message = BiteBookInvite.buildMessage({
+        senderName: BiteBookProfile.get().name,
+        food: (cachedEntry && cachedEntry.food) || null,
+        url,
+      });
+      BiteBookInvite.send({ phone: contact.tel || null, email: contact.tel ? null : contact.email, message });
+      const via = contact.tel ? 'texted' : 'emailed';
+      row.innerHTML = `<span>${contact.name || target}</span> <span class="field-sublabel">⏳ ${via} — waiting</span>`;
+    });
+  }
+
+  // Chrome/Android only — same feature-detected Contact Picker API already
+  // used to invite someone from js/invite.js, just picking several people
+  // at once here instead of one.
+  if (typeof BiteBookContacts !== 'undefined' && BiteBookContacts.isSupported()) {
+    pickContactsLink.style.display = 'inline';
+    pickContactsLink.addEventListener('click', async () => {
+      pickContactsLink.disabled = true;
+      const picked = await BiteBookContacts.pick({ multiple: true });
+      pickContactsLink.disabled = false;
+      const names = picked.map((c) => c.name).filter(Boolean);
+      if (names.length === 0) return;
+
+      hasInteracted = true;
+      namesWrap.style.display = 'block';
+      const existingNames = companionNamesInput.value
+        .split(',')
+        .map((n) => n.trim())
+        .filter(Boolean);
+      const merged = Array.from(new Set([...existingNames, ...names]));
+      companionNamesInput.value = merged.join(', ');
+      scheduleSave();
+
+      if (typeof BiteBookInvite !== 'undefined' && entryId) {
+        picked.forEach(renderInviteOffer);
+      }
+    });
+  }
 
   companionNamesInput.addEventListener('input', () => {
     scheduleSave();

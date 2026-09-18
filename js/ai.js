@@ -318,6 +318,38 @@ const BiteBookAI = (() => {
     }
   }
 
+  function buildPersonDedupePrompt(names) {
+    return [
+      "Here is a list of people's names from someone's personal food journal, typed in by hand over time under \"who was with you.\"",
+      'Some might refer to the exact same real person, just written differently — a nickname, a typo, a shortened or full form (e.g. "Dave"/"David", "Liz"/"Elizabeth").',
+      '',
+      JSON.stringify(names),
+      '',
+      'Rules:',
+      '- Group together only names you are fairly confident refer to the same real person. When in doubt, leave them separate.',
+      '- Only include groups of 2 or more names — skip any name with no likely duplicate.',
+      '- Common first names shared by clearly different people (e.g. two different "Priya"s) should NOT be grouped just because they match exactly — only group spelling/nickname variants of what looks like one person.',
+      '- For each group, suggest the fuller, more complete form as the canonical name.',
+    ].join('\n');
+  }
+
+  async function findDuplicateCompanionNames(names) {
+    const textPart = await callGemini({
+      contents: [{ parts: [{ text: buildPersonDedupePrompt(names) }] }],
+      generationConfig: {
+        responseMimeType: 'application/json',
+        responseSchema: DEDUPE_SCHEMA,
+      },
+    });
+    try {
+      return JSON.parse(textPart).groups || [];
+    } catch (e) {
+      const err = new Error('Could not parse cleanup response.');
+      err.code = 'PARSE_ERROR';
+      throw err;
+    }
+  }
+
   // ---------- menu lookup ----------
 
   // Asks Gemini, with Google Search switched on, to find the restaurant's
@@ -508,6 +540,7 @@ const BiteBookAI = (() => {
     generateInsights,
     semanticSearchEntries,
     findDuplicatePlaces,
+    findDuplicateCompanionNames,
     friendlyErrorMessage,
     findMenuMatches,
     findPlacesOnTheWeb,

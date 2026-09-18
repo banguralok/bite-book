@@ -63,6 +63,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const session = await requireAuth();
     if (!session) return; // requireAuth() already redirected to login.html
     isSignedIn = true;
+    if (typeof BiteBookIdleTimeout !== 'undefined') BiteBookIdleTimeout.start();
     if (typeof BiteBookProfile !== 'undefined') {
       await BiteBookProfile.load();
     }

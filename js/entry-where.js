@@ -14,6 +14,13 @@ document.addEventListener('bitebook:ready', async () => {
   const continueBtn = document.getElementById('continue-btn');
   const savedToast = document.getElementById('saved-toast');
   const autosaveHint = document.getElementById('autosave-hint');
+  const placeHistoryWrap = document.getElementById('place-history-wrap');
+  const placeVisitNote = document.getElementById('place-visit-note');
+  const placeNotesSection = document.getElementById('place-notes-section');
+  const placeNoteDisplay = document.getElementById('place-note-display');
+  const placeNoteInput = document.getElementById('place-note-input');
+  const placeNoteEditLink = document.getElementById('place-note-edit-link');
+  const placeNoteSaveBtn = document.getElementById('place-note-save-btn');
 
   let entryId = null;
   let createdAt = null;
@@ -91,6 +98,86 @@ document.addEventListener('bitebook:ready', async () => {
     continueBtn.disabled = !(placeNameInput.value.trim() && selectedPlaceType);
   }
 
+  // "You've been here before" + place notes: both keyed off the same place
+  // name, so one lookup drives both — surfaced the moment a place name
+  // settles rather than requiring a separate step, since this is exactly
+  // the moment a past visit or a saved reminder is most useful.
+  let currentPlaceNote = null;
+
+  function resetNoteUi() {
+    placeNoteDisplay.style.display = 'none';
+    placeNoteInput.style.display = 'none';
+    placeNoteSaveBtn.style.display = 'none';
+    placeNoteEditLink.style.display = 'inline';
+  }
+
+  async function lookupPlaceHistory(placeName) {
+    if (!placeName) {
+      placeHistoryWrap.style.display = 'none';
+      return;
+    }
+
+    const [allEntries, note] = await Promise.all([
+      BiteBookStorage.listEntries(),
+      BiteBookStorage.getPlaceNote(placeName),
+    ]);
+
+    const pastVisits = allEntries
+      .filter((e) => e.id !== entryId && e.status === 'complete' && e.placeName === placeName)
+      .sort((a, b) => String(b.ateOn || b.updatedAt || '').localeCompare(String(a.ateOn || a.updatedAt || '')));
+
+    currentPlaceNote = note;
+    resetNoteUi();
+
+    if (pastVisits.length === 0 && !note) {
+      placeHistoryWrap.style.display = 'none';
+      return;
+    }
+
+    placeHistoryWrap.style.display = 'block';
+
+    if (pastVisits.length > 0) {
+      const last = pastVisits[0];
+      const bits = [];
+      if (last.rating) bits.push(ratingStarsLabel(last.rating));
+      if (last.ateOn) bits.push(formatDateLabel(last.ateOn));
+      const quote = last.reflection ? ` — "${last.reflection}"` : '';
+      placeVisitNote.style.display = 'block';
+      placeVisitNote.innerHTML = `<p class="field-sublabel">📍 You've been here before${bits.length ? ` (${bits.join(', ')})` : ''}${quote ? `<em>${quote}</em>` : ''} — <a href="entry-view.html?id=${encodeURIComponent(last.id)}">see that entry</a></p>`;
+    } else {
+      placeVisitNote.style.display = 'none';
+    }
+
+    placeNotesSection.style.display = 'block';
+    if (note) {
+      placeNoteDisplay.style.display = 'block';
+      placeNoteDisplay.textContent = `📌 ${note.note}`;
+      placeNoteEditLink.textContent = '✏️ Edit note';
+    } else {
+      placeNoteEditLink.textContent = '✏️ Add a note';
+    }
+  }
+
+  placeNoteEditLink.addEventListener('click', () => {
+    placeNoteInput.value = (currentPlaceNote && currentPlaceNote.note) || '';
+    placeNoteInput.style.display = 'block';
+    placeNoteSaveBtn.style.display = 'inline-block';
+    placeNoteEditLink.style.display = 'none';
+    placeNoteDisplay.style.display = 'none';
+    placeNoteInput.focus();
+  });
+
+  placeNoteSaveBtn.addEventListener('click', async () => {
+    const placeName = placeNameInput.value.trim();
+    if (!placeName) return;
+    placeNoteSaveBtn.disabled = true;
+    const ok = await BiteBookStorage.savePlaceNote(placeName, placeNoteInput.value);
+    placeNoteSaveBtn.disabled = false;
+    if (ok) await lookupPlaceHistory(placeName);
+  });
+
+  const schedulePlaceHistoryLookup = debounce(() => lookupPlaceHistory(placeNameInput.value.trim()), 600);
+
   placeNameInput.addEventListener('input', () => {
     placeSource = 'manual';
     if (placeNameInput.value.trim().length > 0) {
@@ -100,6 +187,7 @@ document.addEventListener('bitebook:ready', async () => {
     }
     updateContinueState();
     scheduleSave();
+    schedulePlaceHistoryLookup();
   });
 
   addAddressLink.addEventListener('click', () => {
@@ -187,6 +275,7 @@ document.addEventListener('bitebook:ready', async () => {
         if (placeNameInput.value.trim()) showPlaceTypeSection();
         updateContinueState();
         scheduleSave();
+        schedulePlaceHistoryLookup();
         resetGeoButton();
         await populatePlaceSuggestions();
       },
@@ -207,6 +296,7 @@ document.addEventListener('bitebook:ready', async () => {
     if (existing.placeName) {
       placeNameInput.value = existing.placeName;
       showPlaceTypeSection();
+      await lookupPlaceHistory(existing.placeName);
     }
     if (existing.placeAddress) {
       placeAddressInput.value = existing.placeAddress;

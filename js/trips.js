@@ -11,6 +11,11 @@ document.addEventListener('bitebook:ready', async () => {
   const newTripWrap = document.getElementById('new-trip-wrap');
   const newTripName = document.getElementById('new-trip-name');
   const createBtn = document.getElementById('new-trip-create-btn');
+  const futureToggle = document.getElementById('new-trip-future-toggle');
+  const futureWrap = document.getElementById('new-trip-future-wrap');
+  const startsInput = document.getElementById('new-trip-starts');
+  const endsInput = document.getElementById('new-trip-ends');
+  const cityInput = document.getElementById('new-trip-city');
 
   newTripToggle.addEventListener('click', () => {
     const isOpen = newTripWrap.style.display !== 'none';
@@ -18,12 +23,21 @@ document.addEventListener('bitebook:ready', async () => {
     if (!isOpen) newTripName.focus();
   });
 
+  futureToggle.addEventListener('click', () => {
+    const isOpen = futureWrap.style.display !== 'none';
+    futureWrap.style.display = isOpen ? 'none' : 'block';
+  });
+
   createBtn.addEventListener('click', async () => {
     const name = newTripName.value.trim();
     if (!name) return;
     createBtn.disabled = true;
     createBtn.textContent = 'Creating...';
-    const trip = await BiteBookStorage.createTrip(name);
+    const trip = await BiteBookStorage.createTrip(name, {
+      startsOn: startsInput.value || null,
+      endsOn: endsInput.value || null,
+      city: cityInput.value.trim() || null,
+    });
     if (trip) {
       window.location.href = `trip-view.html?id=${encodeURIComponent(trip.id)}`;
     } else {
